@@ -85,7 +85,7 @@
       "title": "Computed value generators",
       "description": "Functions to generate AWS-style computed values (ARNs, IDs, domain names)",
       "priority": 94,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "generateS3Arn(bucket_name) returns 'arn:aws:s3:::bucket-name'",
         "generateS3Id(bucket_name) returns bucket_name",

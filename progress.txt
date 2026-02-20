@@ -16,6 +16,9 @@ Project: terraform-town - Mock AWS Provider
 - ResourceHandler CRUD: create→ResourceResult, read→ResourceResult|null, update→ResourceResult, delete→void
 - State store: `StateStore` class in `packages/aws-mock/src/state/store.ts` — JSON file-backed, keyed by type/id
 - State format: `{ version: 1, resources: { [type]: { [id]: { id, attributes } } } }`
+- Computed values: `packages/aws-mock/src/utils/computed.ts` — generateS3Arn, generateS3Id, generateS3Domain, generateAccountId
+- Account ID: fixed mock value "123456789012" (consistent across calls)
+- S3 domain: `bucket.s3.amazonaws.com` for us-east-1, `bucket.s3.region.amazonaws.com` for others
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -75,5 +78,17 @@ Project: terraform-town - Mock AWS Provider
   - load() returns empty state if file doesn't exist (no error)
   - update/delete throw if resource not found
   - Tests use temp dirs (mkdtemp) cleaned up in afterEach
+---
+
+## 2026-02-20 - US-007
+- Created computed value generators at `packages/aws-mock/src/utils/computed.ts`
+- Created tests at `packages/aws-mock/tests/computed.test.ts` (7 tests)
+- Files changed: packages/aws-mock/src/utils/computed.ts, packages/aws-mock/tests/computed.test.ts
+- **Learnings for future iterations:**
+  - S3 ARN format: `arn:aws:s3:::bucket-name` (three colons before bucket, no region/account)
+  - S3 ID is just the bucket name
+  - S3 domain differs by region: us-east-1 uses `bucket.s3.amazonaws.com`, others use `bucket.s3.region.amazonaws.com`
+  - Mock account ID is a fixed 12-digit string "123456789012" — consistent across calls for deterministic tests
+  - These generators will be used by resource handlers (US-008+) to populate computed attributes
 ---
 
