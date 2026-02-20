@@ -1,0 +1,15 @@
+{
+  "name": "terraform-town",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "format": "oxfmt format ."
+  },
+  "devDependencies": {
+    "bun-types": "^1.2.0"
+  }
+}

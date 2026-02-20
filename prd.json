@@ -1,0 +1,272 @@
+{
+  "name": "terraform-town",
+  "branchName": "ralph/aws-mock-provider",
+  "description": "A stateful mock AWS provider for Terraform Town learning game",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Monorepo setup complete",
+      "description": "Initialize bun workspace with packages/aws-mock and packages/terraform-provider-aws-mock",
+      "priority": 100,
+      "passes": true,
+      "acceptanceCriteria": [
+        "bun install runs without errors",
+        "packages/aws-mock/package.json exists",
+        "Root package.json has workspaces configured"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Terraform CLI installed",
+      "description": "Install terraform CLI for schema dumping and testing",
+      "priority": 99,
+      "passes": true,
+      "acceptanceCriteria": [
+        "terraform version command succeeds",
+        "Terraform version is >= 1.0"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "AWS provider schema dumped",
+      "description": "Dump the AWS provider schema to packages/aws-mock/schema/aws-provider-schema.json",
+      "priority": 98,
+      "passes": false,
+      "acceptanceCriteria": [
+        "schema/aws-provider-schema.json exists",
+        "File is valid JSON",
+        "Contains resource_schemas for aws_s3_bucket",
+        "Schema size is > 10MB"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Schema parser utility",
+      "description": "Create utility to parse schema and extract resource definitions",
+      "priority": 97,
+      "passes": false,
+      "acceptanceCriteria": [
+        "parseResourceDefinition('aws_s3_bucket') returns required args",
+        "parseResourceDefinition('aws_s3_bucket') returns computed attributes",
+        "parseResourceDefinition('aws_s3_bucket') returns nested blocks",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Resource interface defined",
+      "description": "Define TypeScript interface for resource handlers (Create/Read/Update/Delete)",
+      "priority": 96,
+      "passes": false,
+      "acceptanceCriteria": [
+        "ResourceHandler interface exists with Create/Read/Update/Delete methods",
+        "ResourceContext type defined",
+        "ResourceResult type defined",
+        "Types compile without errors"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "State store implementation",
+      "description": "JSON-based state store that persists resources",
+      "priority": 95,
+      "passes": false,
+      "acceptanceCriteria": [
+        "createResource() writes to state file",
+        "readResource() returns stored resource",
+        "updateResource() modifies existing resource",
+        "deleteResource() removes resource",
+        "State file is valid JSON after each operation",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "Computed value generators",
+      "description": "Functions to generate AWS-style computed values (ARNs, IDs, domain names)",
+      "priority": 94,
+      "passes": false,
+      "acceptanceCriteria": [
+        "generateS3Arn(bucket_name) returns 'arn:aws:s3:::bucket-name'",
+        "generateS3Id(bucket_name) returns bucket_name",
+        "generateS3Domain(bucket_name, region) returns correct domain format",
+        "generateAccountId() returns 12-digit string",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "aws_s3_bucket resource handler",
+      "description": "Implement Create/Read/Update/Delete for aws_s3_bucket",
+      "priority": 93,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create accepts bucket argument, returns computed ARN and ID",
+        "Read returns stored bucket attributes",
+        "Update modifies bucket configuration",
+        "Delete removes bucket from state",
+        "Handles optional arguments (tags, versioning, etc.)",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "aws_s3_bucket_policy resource handler",
+      "description": "Implement aws_s3_bucket_policy with reference support",
+      "priority": 92,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create accepts bucket and policy arguments",
+        "Can reference aws_s3_bucket.b.arn",
+        "Read returns stored policy",
+        "Update modifies policy",
+        "Delete removes policy from state",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "US-010",
+      "title": "Mock backend server",
+      "description": "HTTP server (Hono) that exposes resource CRUD operations",
+      "priority": 91,
+      "passes": false,
+      "acceptanceCriteria": [
+        "POST /resource/aws_s3_bucket creates bucket",
+        "GET /resource/aws_s3_bucket/:id reads bucket",
+        "PUT /resource/aws_s3_bucket/:id updates bucket",
+        "DELETE /resource/aws_s3_bucket/:id deletes bucket",
+        "Server starts without errors",
+        "Integration tests pass"
+      ]
+    },
+    {
+      "id": "US-011",
+      "title": "Terraform provider skeleton",
+      "description": "Go provider that Terraform can discover",
+      "priority": 90,
+      "passes": false,
+      "acceptanceCriteria": [
+        "go.mod exists with terraform-plugin-sdk dependency",
+        "main.go implements provider server",
+        "Provider compiles with 'go build'",
+        "Binary named 'terraform-provider-aws-mock'"
+      ]
+    },
+    {
+      "id": "US-012",
+      "title": "Provider schema registration",
+      "description": "Provider registers schema from dumped AWS schema",
+      "priority": 89,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Provider declares aws_s3_bucket resource",
+        "Schema matches AWS provider schema",
+        "Required arguments are correct",
+        "Computed attributes are correct"
+      ]
+    },
+    {
+      "id": "US-013",
+      "title": "Provider CRUD wired to mock backend",
+      "description": "Provider calls mock backend HTTP API for CRUD operations",
+      "priority": 88,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create resource calls POST /resource/:type",
+        "Read resource calls GET /resource/:type/:id",
+        "Update resource calls PUT /resource/:type/:id",
+        "Delete resource calls DELETE /resource/:type/:id",
+        "Computed values returned to Terraform"
+      ]
+    },
+    {
+      "id": "US-014",
+      "title": "Integration: terraform init",
+      "description": "Provider installs correctly via terraform init",
+      "priority": 80,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform init succeeds",
+        "No error messages",
+        "Provider appears in .terraform/providers/"
+      ]
+    },
+    {
+      "id": "US-015",
+      "title": "Integration: terraform plan",
+      "description": "Single resource plan works",
+      "priority": 79,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform plan for aws_s3_bucket succeeds",
+        "Plan shows '1 to add'",
+        "Plan shows computed values (arn, id)",
+        "No errors in output"
+      ]
+    },
+    {
+      "id": "US-016",
+      "title": "Integration: terraform apply",
+      "description": "Apply creates state file",
+      "priority": 78,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform apply succeeds",
+        "terraform.tfstate file exists",
+        "State contains aws_s3_bucket resource",
+        "State contains computed values"
+      ]
+    },
+    {
+      "id": "US-017",
+      "title": "Integration: no drift on second plan",
+      "description": "Second plan after apply shows no changes",
+      "priority": 77,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform plan (after apply) shows 'No changes'",
+        "State is consistent",
+        "Computed values match"
+      ]
+    },
+    {
+      "id": "US-018",
+      "title": "Integration: terraform destroy",
+      "description": "Destroy removes resources from state",
+      "priority": 76,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform destroy succeeds",
+        "State file is empty or contains empty resources",
+        "Mock backend confirms resource deleted"
+      ]
+    },
+    {
+      "id": "US-019",
+      "title": "Integration: resource references",
+      "description": "Resources can reference each other",
+      "priority": 75,
+      "passes": false,
+      "acceptanceCriteria": [
+        "aws_s3_bucket_policy can reference aws_s3_bucket.b.arn",
+        "terraform plan shows dependency graph",
+        "terraform apply creates in correct order",
+        "terraform destroy removes in correct order"
+      ]
+    },
+    {
+      "id": "US-020",
+      "title": "Test runner for Ralph",
+      "description": "Script that runs all tests and updates prd.json",
+      "priority": 70,
+      "passes": false,
+      "acceptanceCriteria": [
+        "scripts/run-tests.sh exists",
+        "Runs all integration tests",
+        "Outputs pass/fail for each story",
+        "Updates prd.json with passes: true/false",
+        "Exits 0 if all pass, 1 if any fail"
+      ]
+    }
+  ]
+}

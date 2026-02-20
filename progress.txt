@@ -1,0 +1,20 @@
+# Ralph Progress Log
+
+Started: 2026-02-20
+Project: terraform-town - Mock AWS Provider
+
+## Codebase Patterns
+
+(Discovered patterns will be added here by Ralph iterations)
+
+## 2026-02-20 14:59 - US-002
+- Installed terraform via homebrew
+- Version: v1.5.7 (last open-source version before BUSL license)
+- Note: Homebrew won't update beyond this due to license change
+## 2026-02-20 14:59 - US-001
+- Initialized bun workspace
+- packages/aws-mock created with Hono, Effect dependencies
+- packages/terraform-provider-aws-mock created (empty, for Go provider)
+- bun install succeeded
+---
+
