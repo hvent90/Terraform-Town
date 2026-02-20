@@ -114,7 +114,7 @@
       "title": "aws_s3_bucket_policy resource handler",
       "description": "Implement aws_s3_bucket_policy with reference support",
       "priority": 92,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create accepts bucket and policy arguments",
         "Can reference aws_s3_bucket.b.arn",

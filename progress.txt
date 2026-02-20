@@ -23,6 +23,9 @@ Project: terraform-town - Mock AWS Provider
 - S3 bucket handler: `createS3BucketHandler` in `packages/aws-mock/src/resources/s3-bucket.ts`
 - bucket_domain_name always uses us-east-1 format, bucket_regional_domain_name always includes region
 - S3 hosted zone ID for us-east-1: "Z3AQBSTGFYJSTF"
+- S3 bucket policy handler: `createS3BucketPolicyHandler` in `packages/aws-mock/src/resources/s3-bucket-policy.ts`
+- S3 bucket policy ID is the bucket name (same as AWS behavior)
+- S3 bucket policy schema: bucket (required), policy (required), id (computed) — no nested blocks
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -107,5 +110,17 @@ Project: terraform-town - Mock AWS Provider
   - Default values: force_destroy=false, tags={}, tags_all mirrors tags
   - Read delegates directly to state store, delete delegates directly to state store
   - Tests use same temp dir pattern as state-store tests (mkdtemp + cleanup in afterEach)
+---
+
+## 2026-02-20 - US-009
+- Created aws_s3_bucket_policy resource handler at `packages/aws-mock/src/resources/s3-bucket-policy.ts`
+- Created tests at `packages/aws-mock/tests/s3-bucket-policy.test.ts` (8 tests)
+- Files changed: packages/aws-mock/src/resources/s3-bucket-policy.ts, packages/aws-mock/tests/s3-bucket-policy.test.ts
+- **Learnings for future iterations:**
+  - aws_s3_bucket_policy is one of the simplest resource types: bucket (required), policy (required), id (computed = bucket name)
+  - No nested blocks, no optional attributes, no extra computed values
+  - Reference support: Terraform core resolves references before calling the provider, so the mock just stores the already-resolved values
+  - Tests include cross-resource scenario: create bucket, then create policy referencing bucket's ARN
+  - Same factory pattern as s3-bucket: `createS3BucketPolicyHandler(store)` returns ResourceHandler
 ---
 
