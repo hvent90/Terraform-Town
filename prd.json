@@ -44,7 +44,7 @@
       "title": "Schema parser utility",
       "description": "Create utility to parse schema and extract resource definitions",
       "priority": 97,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "parseResourceDefinition('aws_s3_bucket') returns required args",
         "parseResourceDefinition('aws_s3_bucket') returns computed attributes",

@@ -9,6 +9,9 @@ Project: terraform-town - Mock AWS Provider
 - Schema access: `data.provider_schemas["registry.terraform.io/hashicorp/aws"].resource_schemas["aws_s3_bucket"]`
 - Test files: `packages/aws-mock/tests/*.test.ts` using `bun:test`
 - Formatting: `npx oxfmt format <file>` (oxfmt not globally installed)
+- Schema parser: `parseResourceDefinition(type)` in `packages/aws-mock/src/utils/schema-parser.ts`
+- Schema attribute categories: required (required=true), optional (optional=true, may also be computed), computed-only (computed=true && !optional)
+- aws_s3_bucket has 0 required attrs, ~10 optional, 7 computed-only, 10 nested blocks
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -33,5 +36,17 @@ Project: terraform-town - Mock AWS Provider
   - Schema structure: `provider_schemas[key].resource_schemas[resource_type]`
   - `terraform providers schema -json` requires `terraform init` to have been run first
   - oxfmt is not installed globally; use `npx oxfmt` as fallback
+---
+
+## 2026-02-20 - US-004
+- Created schema parser utility at `packages/aws-mock/src/utils/schema-parser.ts`
+- Created tests at `packages/aws-mock/tests/schema-parser.test.ts` (8 tests)
+- Files changed: packages/aws-mock/src/utils/schema-parser.ts, packages/aws-mock/tests/schema-parser.test.ts
+- **Learnings for future iterations:**
+  - Terraform schema attributes have 3 categories: required, optional (may also be computed), computed-only
+  - `bucket` in aws_s3_bucket is optional+computed (auto-generated if omitted)
+  - Most aws_s3_bucket nested blocks are deprecated in favor of standalone resources (e.g., aws_s3_bucket_versioning)
+  - Schema block_types have nesting_mode: "single", "list", or "set"
+  - normalizeType helper needed to handle Terraform type tuples like `["map", "string"]` → `"map(string)"`
 ---
 
