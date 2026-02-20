@@ -31,7 +31,7 @@
       "title": "AWS provider schema dumped",
       "description": "Dump the AWS provider schema to packages/aws-mock/schema/aws-provider-schema.json",
       "priority": 98,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "schema/aws-provider-schema.json exists",
         "File is valid JSON",

@@ -5,7 +5,10 @@ Project: terraform-town - Mock AWS Provider
 
 ## Codebase Patterns
 
-(Discovered patterns will be added here by Ralph iterations)
+- Schema location: `packages/aws-mock/schema/aws-provider-schema.json` (AWS provider v5.100.0, 13MB)
+- Schema access: `data.provider_schemas["registry.terraform.io/hashicorp/aws"].resource_schemas["aws_s3_bucket"]`
+- Test files: `packages/aws-mock/tests/*.test.ts` using `bun:test`
+- Formatting: `npx oxfmt format <file>` (oxfmt not globally installed)
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -16,5 +19,19 @@ Project: terraform-town - Mock AWS Provider
 - packages/aws-mock created with Hono, Effect dependencies
 - packages/terraform-provider-aws-mock created (empty, for Go provider)
 - bun install succeeded
+---
+
+## 2026-02-20 15:20 - US-003
+- Dumped AWS provider schema (hashicorp/aws v5.100.0) to packages/aws-mock/schema/aws-provider-schema.json
+- Created temp terraform config in /tmp/tf-schema-dump to download provider and dump schema
+- Added schema validation tests in packages/aws-mock/tests/schema.test.ts
+- Added .gitignore (node_modules, .terraform, tfstate files)
+- Files changed: packages/aws-mock/schema/aws-provider-schema.json, packages/aws-mock/tests/schema.test.ts, .gitignore
+- **Learnings for future iterations:**
+  - Schema is 13MB, contains 1526 resource types from AWS provider v5.100.0
+  - Provider schema key format is `registry.terraform.io/hashicorp/aws`
+  - Schema structure: `provider_schemas[key].resource_schemas[resource_type]`
+  - `terraform providers schema -json` requires `terraform init` to have been run first
+  - oxfmt is not installed globally; use `npx oxfmt` as fallback
 ---
 
