@@ -14,6 +14,8 @@ Project: terraform-town - Mock AWS Provider
 - aws_s3_bucket has 0 required attrs, ~10 optional, 7 computed-only, 10 nested blocks
 - Resource types: `packages/aws-mock/src/resources/types.ts` — ResourceHandler, ResourceContext, ResourceResult
 - ResourceHandler CRUD: create→ResourceResult, read→ResourceResult|null, update→ResourceResult, delete→void
+- State store: `StateStore` class in `packages/aws-mock/src/state/store.ts` — JSON file-backed, keyed by type/id
+- State format: `{ version: 1, resources: { [type]: { [id]: { id, attributes } } } }`
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -61,5 +63,17 @@ Project: terraform-town - Mock AWS Provider
   - ResourceResult: `{ id: string, attributes: Record<string, unknown> }`
   - ResourceHandler: `{ create, read, update, delete }` — read returns null for not-found, delete returns void
   - Types compile cleanly with `npx -p typescript tsc --noEmit --strict`
+---
+
+## 2026-02-20 - US-006
+- Created StateStore class at `packages/aws-mock/src/state/store.ts`
+- Created tests at `packages/aws-mock/tests/state-store.test.ts` (12 tests)
+- Files changed: packages/aws-mock/src/state/store.ts, packages/aws-mock/tests/state-store.test.ts
+- **Learnings for future iterations:**
+  - State stored as JSON file with `{ version: 1, resources: { [type]: { [id]: { id, attributes } } } }`
+  - StateStore constructor takes file path, creates file/dirs on first write
+  - load() returns empty state if file doesn't exist (no error)
+  - update/delete throw if resource not found
+  - Tests use temp dirs (mkdtemp) cleaned up in afterEach
 ---
 

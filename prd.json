@@ -70,7 +70,7 @@
       "title": "State store implementation",
       "description": "JSON-based state store that persists resources",
       "priority": 95,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "createResource() writes to state file",
         "readResource() returns stored resource",
