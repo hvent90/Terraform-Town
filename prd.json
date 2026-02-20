@@ -57,7 +57,7 @@
       "title": "Resource interface defined",
       "description": "Define TypeScript interface for resource handlers (Create/Read/Update/Delete)",
       "priority": 96,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "ResourceHandler interface exists with Create/Read/Update/Delete methods",
         "ResourceContext type defined",

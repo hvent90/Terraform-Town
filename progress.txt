@@ -12,6 +12,8 @@ Project: terraform-town - Mock AWS Provider
 - Schema parser: `parseResourceDefinition(type)` in `packages/aws-mock/src/utils/schema-parser.ts`
 - Schema attribute categories: required (required=true), optional (optional=true, may also be computed), computed-only (computed=true && !optional)
 - aws_s3_bucket has 0 required attrs, ~10 optional, 7 computed-only, 10 nested blocks
+- Resource types: `packages/aws-mock/src/resources/types.ts` — ResourceHandler, ResourceContext, ResourceResult
+- ResourceHandler CRUD: create→ResourceResult, read→ResourceResult|null, update→ResourceResult, delete→void
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -48,5 +50,16 @@ Project: terraform-town - Mock AWS Provider
   - Most aws_s3_bucket nested blocks are deprecated in favor of standalone resources (e.g., aws_s3_bucket_versioning)
   - Schema block_types have nesting_mode: "single", "list", or "set"
   - normalizeType helper needed to handle Terraform type tuples like `["map", "string"]` → `"map(string)"`
+---
+
+## 2026-02-20 - US-005
+- Defined ResourceHandler, ResourceContext, ResourceResult types at `packages/aws-mock/src/resources/types.ts`
+- Created tests at `packages/aws-mock/tests/resource-handler.test.ts` (6 tests)
+- Files changed: packages/aws-mock/src/resources/types.ts, packages/aws-mock/tests/resource-handler.test.ts
+- **Learnings for future iterations:**
+  - ResourceContext: `{ resourceType: string, attributes: Record<string, unknown>, id?: string }`
+  - ResourceResult: `{ id: string, attributes: Record<string, unknown> }`
+  - ResourceHandler: `{ create, read, update, delete }` — read returns null for not-found, delete returns void
+  - Types compile cleanly with `npx -p typescript tsc --noEmit --strict`
 ---
 
