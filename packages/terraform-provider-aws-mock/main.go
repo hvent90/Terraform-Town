@@ -7,7 +7,11 @@ import (
 
 func Provider() *schema.Provider {
 	return &schema.Provider{
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"aws_s3_bucket": {
+				Schema: resourceS3BucketSchema(),
+			},
+		},
 	}
 }
 
