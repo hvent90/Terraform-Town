@@ -26,6 +26,9 @@ Project: terraform-town - Mock AWS Provider
 - S3 bucket policy handler: `createS3BucketPolicyHandler` in `packages/aws-mock/src/resources/s3-bucket-policy.ts`
 - S3 bucket policy ID is the bucket name (same as AWS behavior)
 - S3 bucket policy schema: bucket (required), policy (required), id (computed) — no nested blocks
+- Mock server: `createApp(statePath)` in `packages/aws-mock/src/index.ts` — Hono app with CRUD routes at `/resource/:type[/:id]`
+- Server testing: use `app.request(path, init)` — no real HTTP server needed
+- Adding new resource types: add handler to `handlers` map in `createApp()`
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -122,5 +125,18 @@ Project: terraform-town - Mock AWS Provider
   - Reference support: Terraform core resolves references before calling the provider, so the mock just stores the already-resolved values
   - Tests include cross-resource scenario: create bucket, then create policy referencing bucket's ARN
   - Same factory pattern as s3-bucket: `createS3BucketPolicyHandler(store)` returns ResourceHandler
+---
+
+## 2026-02-20 - US-010
+- Created mock backend HTTP server (Hono) at `packages/aws-mock/src/index.ts`
+- Created integration tests at `packages/aws-mock/tests/server.test.ts` (8 tests)
+- Files changed: packages/aws-mock/src/index.ts, packages/aws-mock/tests/server.test.ts
+- **Learnings for future iterations:**
+  - `createApp(statePath)` factory returns a Hono app (testable without starting server)
+  - Hono's `app.request()` enables integration testing without a real HTTP server
+  - Routes: POST /resource/:type, GET /resource/:type/:id, PUT /resource/:type/:id, DELETE /resource/:type/:id
+  - Resource handlers registered in a map by type name (extensible for new resource types)
+  - Default export uses Bun's `export default { port, fetch }` pattern for `bun run dev`
+  - 400 for missing attributes, 404 for unknown resource type or missing resource, 204 for delete
 ---
 

@@ -129,7 +129,7 @@
       "title": "Mock backend server",
       "description": "HTTP server (Hono) that exposes resource CRUD operations",
       "priority": 91,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "POST /resource/aws_s3_bucket creates bucket",
         "GET /resource/aws_s3_bucket/:id reads bucket",
