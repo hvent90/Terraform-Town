@@ -29,6 +29,17 @@ Project: terraform-town - Mock AWS Provider
 - Mock server: `createApp(statePath)` in `packages/aws-mock/src/index.ts` — Hono app with CRUD routes at `/resource/:type[/:id]`
 - Server testing: use `app.request(path, init)` — no real HTTP server needed
 - Adding new resource types: add handler to `handlers` map in `createApp()`
+- Go provider: `packages/terraform-provider-aws-mock/` — terraform-plugin-sdk/v2, builds with `go build -o terraform-provider-aws-mock`
+- Provider entry: `main.go` — `Provider()` returns `*schema.Provider`, `main()` calls `plugin.Serve`
+- Go schema files: `schema_<resource>.go` — each resource's schema in its own file (e.g., `schema_s3_bucket.go`)
+- Go tests: `provider_test.go` — validates schema registration, attribute flags, nested blocks
+- Schema codegen: `scripts/generate-go-schema.ts` — reads AWS JSON schema, outputs Go terraform-plugin-sdk schema code
+- Type mapping: JSON "number" → `schema.TypeInt`, "string" → `schema.TypeString`, "bool" → `schema.TypeBool`
+- Nested blocks: nesting_mode "single" = TypeList+MaxItems:1, "list" = TypeList, "set" = TypeSet
+- Adding new resources to provider: create `schema_<resource>.go`, add to ResourcesMap in `main.go`
+- CRUD wiring: `client.go` MockClient calls backend HTTP API; `resource_<name>.go` has CRUD functions using extractAttributes/setAttributes
+- Provider config: `backend_url` (default `http://localhost:3000`), env var `AWS_MOCK_BACKEND_URL`
+- CRUD pattern: extractAttributes skips computed-only fields, setAttributes maps backend response to ResourceData
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -138,5 +149,53 @@ Project: terraform-town - Mock AWS Provider
   - Resource handlers registered in a map by type name (extensible for new resource types)
   - Default export uses Bun's `export default { port, fetch }` pattern for `bun run dev`
   - 400 for missing attributes, 404 for unknown resource type or missing resource, 204 for delete
+---
+
+## 2026-02-20 - US-011
+- Created Go provider skeleton at `packages/terraform-provider-aws-mock/`
+- Initialized go.mod with terraform-plugin-sdk/v2 v2.38.2
+- Created main.go with minimal Provider() function and plugin.Serve
+- Binary compiles and produces `terraform-provider-aws-mock` executable
+- Added binary to .gitignore (path-specific to avoid ignoring the directory)
+- Files changed: packages/terraform-provider-aws-mock/go.mod, go.sum, main.go, .gitignore
+- **Learnings for future iterations:**
+  - Go 1.26.0 installed via homebrew
+  - terraform-plugin-sdk/v2 is the standard SDK for Terraform providers
+  - Provider skeleton: Provider() returns `*schema.Provider` with empty ResourcesMap, main() calls `plugin.Serve`
+  - Binary must be named `terraform-provider-{name}` for Terraform to discover it
+  - Be careful with .gitignore patterns — `terraform-provider-aws-mock` matches both the binary and the directory; use path-specific pattern instead
+---
+
+## 2026-02-20 - US-012
+- Registered aws_s3_bucket resource schema in Go provider matching the AWS provider schema
+- Created `schema_s3_bucket.go` with full schema including all attributes and nested blocks
+- Created `provider_test.go` with 6 tests verifying schema registration
+- Created `scripts/generate-go-schema.ts` code generator that reads AWS schema JSON and outputs Go schema code
+- Files changed: packages/terraform-provider-aws-mock/main.go, schema_s3_bucket.go, provider_test.go, scripts/generate-go-schema.ts
+- **Learnings for future iterations:**
+  - Terraform JSON schema "number" type maps to schema.TypeInt in Go SDK (all S3 bucket numeric fields are integers)
+  - Timeouts block in JSON schema dump is handled by `schema.Resource.Timeouts` in plugin SDK, not as a regular schema entry — omit from Schema map
+  - `id` attribute is implicit in terraform-plugin-sdk — don't include in top-level Schema map
+  - Nested blocks use schema.TypeList/TypeSet with Elem: &schema.Resource{Schema: ...}
+  - nesting_mode "single" = TypeList + MaxItems: 1, "list" = TypeList, "set" = TypeSet
+  - aws_s3_bucket has 0 required top-level attributes, 11 optional (8 also computed), 7 computed-only, 9 nested blocks (+ timeouts)
+  - Code generator at scripts/generate-go-schema.ts can be reused for other resource types
+---
+
+## 2026-02-20 - US-013
+- Wired Go provider CRUD operations to mock backend HTTP API
+- Created `client.go` — MockClient with CreateResource, ReadResource, UpdateResource, DeleteResource methods
+- Created `resource_s3_bucket.go` — CRUD functions (CreateContext, ReadContext, UpdateContext, DeleteContext) using extractAttributes/setAttributes helpers
+- Updated `main.go` — added provider Schema (backend_url), ConfigureContextFunc, wired resourceS3Bucket() with CRUD
+- Created `client_test.go` — 8 tests verifying HTTP methods, paths, request/response handling, provider config
+- Files changed: packages/terraform-provider-aws-mock/main.go, client.go, client_test.go, resource_s3_bucket.go
+- **Learnings for future iterations:**
+  - Provider `meta` interface{} comes from ConfigureContextFunc; CRUD functions cast it to `*MockClient`
+  - `extractAttributes` iterates schema, skipping computed-only fields, calls `d.GetOk(key)` for user-provided values
+  - `setAttributes` iterates response attributes, calls `d.Set(key, val)` for each schema key present in response
+  - Backend URL configurable via `backend_url` provider attribute or `AWS_MOCK_BACKEND_URL` env var (default: `http://localhost:3000`)
+  - `d.GetOk` returns false for zero values — backend handles defaults (e.g., force_destroy=false)
+  - ReadResource returns nil on 404, causing `d.SetId("")` to remove resource from Terraform state
+  - Go httptest.NewServer is ideal for testing HTTP client without starting real backend
 ---
 

@@ -21,10 +21,7 @@
       "description": "Install terraform CLI for schema dumping and testing",
       "priority": 99,
       "passes": true,
-      "acceptanceCriteria": [
-        "terraform version command succeeds",
-        "Terraform version is >= 1.0"
-      ]
+      "acceptanceCriteria": ["terraform version command succeeds", "Terraform version is >= 1.0"]
     },
     {
       "id": "US-003",
@@ -144,7 +141,7 @@
       "title": "Terraform provider skeleton",
       "description": "Go provider that Terraform can discover",
       "priority": 90,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "go.mod exists with terraform-plugin-sdk dependency",
         "main.go implements provider server",
@@ -157,7 +154,7 @@
       "title": "Provider schema registration",
       "description": "Provider registers schema from dumped AWS schema",
       "priority": 89,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Provider declares aws_s3_bucket resource",
         "Schema matches AWS provider schema",
@@ -170,7 +167,7 @@
       "title": "Provider CRUD wired to mock backend",
       "description": "Provider calls mock backend HTTP API for CRUD operations",
       "priority": 88,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create resource calls POST /resource/:type",
         "Read resource calls GET /resource/:type/:id",
