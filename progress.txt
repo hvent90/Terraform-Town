@@ -19,6 +19,10 @@ Project: terraform-town - Mock AWS Provider
 - Computed values: `packages/aws-mock/src/utils/computed.ts` — generateS3Arn, generateS3Id, generateS3Domain, generateAccountId
 - Account ID: fixed mock value "123456789012" (consistent across calls)
 - S3 domain: `bucket.s3.amazonaws.com` for us-east-1, `bucket.s3.region.amazonaws.com` for others
+- Resource handlers: factory function pattern `createXxxHandler(store: StateStore): ResourceHandler` in `packages/aws-mock/src/resources/`
+- S3 bucket handler: `createS3BucketHandler` in `packages/aws-mock/src/resources/s3-bucket.ts`
+- bucket_domain_name always uses us-east-1 format, bucket_regional_domain_name always includes region
+- S3 hosted zone ID for us-east-1: "Z3AQBSTGFYJSTF"
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -90,5 +94,18 @@ Project: terraform-town - Mock AWS Provider
   - S3 domain differs by region: us-east-1 uses `bucket.s3.amazonaws.com`, others use `bucket.s3.region.amazonaws.com`
   - Mock account ID is a fixed 12-digit string "123456789012" — consistent across calls for deterministic tests
   - These generators will be used by resource handlers (US-008+) to populate computed attributes
+---
+
+## 2026-02-20 - US-008
+- Created aws_s3_bucket resource handler at `packages/aws-mock/src/resources/s3-bucket.ts`
+- Created tests at `packages/aws-mock/tests/s3-bucket.test.ts` (10 tests)
+- Files changed: packages/aws-mock/src/resources/s3-bucket.ts, packages/aws-mock/tests/s3-bucket.test.ts
+- **Learnings for future iterations:**
+  - Resource handlers use factory pattern: `createS3BucketHandler(store)` returns a `ResourceHandler`
+  - Handler builds computed attributes (arn, id, domain names, region, hosted_zone_id) on create/update
+  - `bucket_domain_name` always uses us-east-1 format (no region in URL), `bucket_regional_domain_name` always includes region
+  - Default values: force_destroy=false, tags={}, tags_all mirrors tags
+  - Read delegates directly to state store, delete delegates directly to state store
+  - Tests use same temp dir pattern as state-store tests (mkdtemp + cleanup in afterEach)
 ---
 

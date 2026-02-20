@@ -99,7 +99,7 @@
       "title": "aws_s3_bucket resource handler",
       "description": "Implement Create/Read/Update/Delete for aws_s3_bucket",
       "priority": 93,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create accepts bucket argument, returns computed ARN and ID",
         "Read returns stored bucket attributes",
