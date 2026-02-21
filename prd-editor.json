@@ -21,7 +21,7 @@
       "title": "File explorer component",
       "description": "Left sidebar with file tree for Terraform files",
       "priority": 99,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "FileExplorer component exists",
         "Shows file list with icons",

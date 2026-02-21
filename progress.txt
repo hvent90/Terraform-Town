@@ -684,3 +684,18 @@ Project: terraform-town - Mock AWS Provider
   - React 19 uses `createRoot` from `react-dom/client` (not `ReactDOM.render`)
 ---
 
+## 2026-02-21 - ED-002
+- Created FileExplorer component at `packages/editor/src/FileExplorer.tsx`
+- Created tests at `packages/editor/tests/FileExplorer.test.tsx` (5 tests)
+- Fixed React `act(...)` warnings by setting `globalThis.IS_REACT_ACT_ENVIRONMENT = true` in test setup
+- 9 editor tests pass, 131 visualization tests pass, build succeeds
+- Files changed: packages/editor/src/FileExplorer.tsx, packages/editor/tests/FileExplorer.test.tsx, packages/editor/tests/setup.ts
+- **Learnings for future iterations:**
+  - React 19 exports `act` from `react` directly (not `react-dom/test-utils`)
+  - `globalThis.IS_REACT_ACT_ENVIRONMENT = true` in vitest setup silences `act(...)` warnings
+  - `createRoot` + `act` from React 19 provides clean DOM rendering for tests without `@testing-library/react`
+  - FileExplorer props: `files: {name, path}[]`, `selectedFile?: string`, `onSelect?: (path) => void`
+  - `data-testid` attributes enable reliable querying; `data-selected` attribute enables state assertions
+  - `.tf` file icon label: "HCL", fallback: "TXT" — kept simple, can be replaced with SVG icons later
+---
+
