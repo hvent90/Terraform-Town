@@ -83,7 +83,7 @@ export type EasingFunction =
 
 export interface Animation {
   id: string;
-  type: 'create' | 'destroy' | 'modify' | 'hover' | 'select' | 'focus';
+  type: 'create' | 'destroy' | 'modify' | 'hover' | 'select' | 'focus' | 'pulse';
   target: string | string[];
   duration: number;
   easing: EasingFunction;

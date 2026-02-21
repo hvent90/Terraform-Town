@@ -198,6 +198,19 @@ export class Visualization {
         easing: 'easeOut',
         interruptible: true,
       });
+
+      // Start pulse for planned resources
+      const stateConfig = this.theme.states[resource.state];
+      if (stateConfig && 'pulse' in stateConfig && stateConfig.pulse) {
+        this.animator.play({
+          id: `pulse-${resource.id}`,
+          type: 'pulse',
+          target: resource.id,
+          duration: 1000, // pulse period
+          easing: 'linear',
+          interruptible: true,
+        });
+      }
     }
     
     // Update position

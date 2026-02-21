@@ -42,17 +42,23 @@ export class ResourceFactory {
         geometry = new THREE.BoxGeometry(2, 2, 2);
     }
     
+    // Apply state-based opacity
+    const stateConfig = this.theme.states[resource.state];
+    const targetOpacity = stateConfig && 'opacity' in stateConfig
+      ? Math.min(config.opacity, stateConfig.opacity)
+      : config.opacity;
+
     material = new THREE.MeshStandardMaterial({
       color: config.color,
       emissive: config.emissive,
       emissiveIntensity: config.emissiveIntensity,
-      transparent: config.opacity < 1,
-      opacity: config.opacity,
+      transparent: targetOpacity < 1,
+      opacity: targetOpacity,
       ...(config.wireframe !== undefined && { wireframe: config.wireframe }),
     });
-    
+
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.userData = { id: resource.id, type: resource.type, resource };
+    mesh.userData = { id: resource.id, type: resource.type, resource, targetOpacity };
     
     return mesh;
   }

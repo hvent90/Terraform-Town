@@ -598,3 +598,21 @@ Project: terraform-town - Mock AWS Provider
   - `userData.isGround` distinguishes ground mesh from resource meshes in scene children
 ---
 
+## 2026-02-20 - VIS-015
+- Implemented planned state visual: reduced opacity + pulsing animation
+- ResourceFactory now applies state-based opacity: `min(baseOpacity, stateOpacity)` stored as `targetOpacity` in userData
+- Animator create animation now animates to `targetOpacity` instead of always 1.0
+- Added 'pulse' animation type: oscillates opacity ±0.15 around targetOpacity using sine wave (1000ms period)
+- Pulse animations run indefinitely (never complete) — skipped while create/destroy animations are active for same target
+- Added 'pulse' to Animation type union
+- Visualization starts pulse animation for resources with `theme.states[state].pulse === true`
+- Added 4 tests: planned opacity, applied opacity, distinguishable, pulsing active
+- All 111 tests pass, build succeeds
+- Files changed: packages/visualization/src/resources/ResourceFactory.ts, packages/visualization/src/animations/Animator.ts, packages/visualization/src/types.ts, packages/visualization/src/Visualization.ts, packages/visualization/tests/PlannedState.test.ts
+- **Learnings for future iterations:**
+  - State-based opacity: `min(baseOpacity, stateOpacity)` ensures resources never brighter than their state allows
+  - Pulse must not run during create/destroy — collect one-shot targets and skip pulse in same frame
+  - `targetOpacity` in mesh.userData is the stable base value; material.opacity oscillates from pulsing
+  - Test pulse by checking opacity changes after time advance, not exact values
+---
+

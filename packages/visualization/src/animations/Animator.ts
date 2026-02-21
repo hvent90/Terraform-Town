@@ -55,18 +55,38 @@ export class Animator {
   update(delta: number): void {
     const completed: string[] = [];
 
+    // Collect targets with active one-shot animations (create, destroy)
+    const oneshotTargets = new Set<string>();
+    for (const entry of this.running.values()) {
+      if (entry.animation.type === 'create' || entry.animation.type === 'destroy') {
+        const t = typeof entry.animation.target === 'string'
+          ? entry.animation.target : entry.animation.target[0];
+        oneshotTargets.add(t);
+      }
+    }
+
     for (const [id, entry] of this.running) {
       entry.elapsed += delta;
-      const progress = Math.min(entry.elapsed / entry.animation.duration, 1);
-      const easedProgress = applyEasing(progress, entry.animation.easing);
 
       const targetId = typeof entry.animation.target === 'string'
         ? entry.animation.target
         : entry.animation.target[0];
+
+      // Skip pulse while one-shot animations are active for the same target
+      if (entry.animation.type === 'pulse' && oneshotTargets.has(targetId)) {
+        continue;
+      }
+
+      const progress = Math.min(entry.elapsed / entry.animation.duration, 1);
+      const easedProgress = applyEasing(progress, entry.animation.easing);
       const mesh = this.meshLookup(targetId);
 
       if (mesh) {
-        this.applyAnimation(mesh, entry.animation.type, easedProgress);
+        this.applyAnimation(mesh, entry.animation.type, easedProgress, entry.elapsed);
+      }
+
+      if (entry.animation.type === 'pulse') {
+        continue;
       }
 
       if (progress >= 1) {
@@ -86,17 +106,26 @@ export class Animator {
     mesh: THREE.Object3D,
     type: Animation['type'],
     progress: number,
+    elapsed: number,
   ): void {
     if (type === 'create') {
+      const targetOpacity = mesh.userData.targetOpacity ?? 1;
       mesh.scale.setScalar(progress);
       if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
-        mesh.material.opacity = progress;
+        mesh.material.opacity = progress * targetOpacity;
         mesh.material.transparent = true;
       }
     } else if (type === 'destroy') {
       mesh.scale.setScalar(1 - progress);
       if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
         mesh.material.opacity = 1 - progress;
+        mesh.material.transparent = true;
+      }
+    } else if (type === 'pulse') {
+      if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
+        const targetOpacity = mesh.userData.targetOpacity ?? 1;
+        const pulse = Math.sin(elapsed * Math.PI * 2 / 1000) * 0.15;
+        mesh.material.opacity = Math.max(0.1, targetOpacity + pulse);
         mesh.material.transparent = true;
       }
     }

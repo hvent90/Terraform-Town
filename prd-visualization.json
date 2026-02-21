@@ -186,7 +186,7 @@
       "title": "Planned state visual",
       "description": "Planned resources show at 50% opacity, pulsing",
       "priority": 86,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Planned resources at 50% opacity",
         "Pulsing animation active",
