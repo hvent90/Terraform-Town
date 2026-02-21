@@ -124,6 +124,32 @@ describe("aws_s3_bucket handler", () => {
     });
   });
 
+  describe("validation", () => {
+    test("rejects invalid bucket names on create", async () => {
+      await expect(
+        handler.create({
+          resourceType: "aws_s3_bucket",
+          attributes: { bucket: "AB" },
+        }),
+      ).rejects.toThrow();
+    });
+
+    test("rejects invalid bucket names on update", async () => {
+      await handler.create({
+        resourceType: "aws_s3_bucket",
+        attributes: { bucket: "valid-bucket" },
+      });
+
+      await expect(
+        handler.update({
+          resourceType: "aws_s3_bucket",
+          attributes: { bucket: "AB" },
+          id: "valid-bucket",
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
   describe("optional arguments", () => {
     test("handles tags", async () => {
       const result = await handler.create({

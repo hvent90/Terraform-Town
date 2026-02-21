@@ -1,6 +1,7 @@
 import type { ResourceHandler, ResourceContext, ResourceResult } from "./types";
 import type { StateStore } from "../state/store";
 import { generateS3Arn, generateS3Id, generateS3Domain } from "../utils/computed";
+import { validateBucketName } from "../utils/validation";
 
 const DEFAULT_REGION = "us-east-1";
 const S3_HOSTED_ZONE_ID = "Z3AQBSTGFYJSTF"; // us-east-1
@@ -20,6 +21,10 @@ export function createS3BucketHandler(store: StateStore): ResourceHandler {
   return {
     async create(ctx: ResourceContext): Promise<ResourceResult> {
       const bucket = ctx.attributes.bucket as string;
+      const nameError = validateBucketName(bucket);
+      if (nameError) {
+        throw new Error(nameError);
+      }
       const region = (ctx.attributes.region as string) ?? DEFAULT_REGION;
       const tags = (ctx.attributes.tags as Record<string, string>) ?? {};
 
@@ -45,6 +50,10 @@ export function createS3BucketHandler(store: StateStore): ResourceHandler {
     async update(ctx: ResourceContext): Promise<ResourceResult> {
       const id = ctx.id!;
       const bucket = (ctx.attributes.bucket as string) ?? id;
+      const nameError = validateBucketName(bucket);
+      if (nameError) {
+        throw new Error(nameError);
+      }
       const region = (ctx.attributes.region as string) ?? DEFAULT_REGION;
       const tags = (ctx.attributes.tags as Record<string, string>) ?? {};
 

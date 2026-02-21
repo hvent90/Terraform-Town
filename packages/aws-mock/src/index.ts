@@ -34,12 +34,16 @@ export function createApp(statePath: string) {
       return c.json({ error: "Missing attributes" }, 400);
     }
 
-    const result = await handler.create({
-      resourceType: type,
-      attributes: body.attributes,
-    });
+    try {
+      const result = await handler.create({
+        resourceType: type,
+        attributes: body.attributes,
+      });
 
-    return c.json(result, 201);
+      return c.json(result, 201);
+    } catch (e) {
+      return c.json({ error: (e as Error).message }, 400);
+    }
   });
 
   // Read
@@ -74,13 +78,17 @@ export function createApp(statePath: string) {
     }
 
     const body = await c.req.json();
-    const result = await handler.update({
-      resourceType: type,
-      attributes: body.attributes,
-      id,
-    });
+    try {
+      const result = await handler.update({
+        resourceType: type,
+        attributes: body.attributes,
+        id,
+      });
 
-    return c.json(result);
+      return c.json(result);
+    } catch (e) {
+      return c.json({ error: (e as Error).message }, 400);
+    }
   });
 
   // Delete

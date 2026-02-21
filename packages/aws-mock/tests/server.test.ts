@@ -138,6 +138,20 @@ describe("mock backend server", () => {
     });
   });
 
+  describe("validation", () => {
+    test("returns 400 for invalid bucket name", async () => {
+      const res = await app.request("/resource/aws_s3_bucket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attributes: { bucket: "AB" } }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBeString();
+    });
+  });
+
   describe("error handling", () => {
     test("returns 400 for missing attributes on POST", async () => {
       const res = await app.request("/resource/aws_s3_bucket", {
