@@ -149,7 +149,7 @@
       "title": "Destroy animation works",
       "description": "Resources animate out with fade + scale down",
       "priority": 89,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Destroyed resources fade out",
         "Scale animates 1→0",

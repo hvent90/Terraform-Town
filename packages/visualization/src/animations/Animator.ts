@@ -70,6 +70,9 @@ export class Animator {
       }
 
       if (progress >= 1) {
+        if (entry.animation.type === 'destroy' && mesh) {
+          mesh.parent?.remove(mesh);
+        }
         completed.push(id);
       }
     }

@@ -552,3 +552,15 @@ Project: terraform-town - Mock AWS Provider
   - Both 'create' and 'destroy' animation types are handled (destroy is inverse of create)
 ---
 
+## 2026-02-20 - VIS-012
+- Destroy animation fades out (opacity 1→0) and scales down (1→0) over 300ms
+- Mesh automatically removed from scene (`mesh.parent?.remove(mesh)`) when destroy animation completes
+- Added 5 tests: opacity fading, scale 1→0, duration timing, mesh removal from scene, final opacity
+- All 96 tests pass, build succeeds
+- Files changed: packages/visualization/src/animations/Animator.ts, packages/visualization/tests/DestroyAnimation.test.ts
+- **Learnings for future iterations:**
+  - `mesh.parent?.remove(mesh)` cleanly removes from scene without needing scene reference
+  - Destroy animation logic was already in `applyAnimation()` from VIS-011 — only needed mesh removal on completion
+  - Completion check must reference mesh before deleting from running map
+---
+
