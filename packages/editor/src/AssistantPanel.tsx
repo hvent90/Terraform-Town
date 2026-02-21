@@ -7,13 +7,15 @@ interface ChatMessage {
 
 export interface AssistantPanelProps {
   fileContent?: string;
+  selectedText?: string;
   onChat?: (
     message: string,
     fileContent?: string,
+    selectedText?: string,
   ) => AsyncIterable<string>;
 }
 
-export function AssistantPanel({ fileContent, onChat }: AssistantPanelProps) {
+export function AssistantPanel({ fileContent, selectedText, onChat }: AssistantPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -28,7 +30,7 @@ export function AssistantPanel({ fileContent, onChat }: AssistantPanelProps) {
 
     if (onChat) {
       setStreaming(true);
-      const iter = onChat(trimmed, fileContent);
+      const iter = onChat(trimmed, fileContent, selectedText);
       (async () => {
         let response = "";
         let added = false;

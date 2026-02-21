@@ -21,9 +21,22 @@ resource "aws_vpc" "main" {
 interface EditorProps {
   value?: string;
   onChange?: (value: string | undefined) => void;
+  onSelectionChange?: (selectedText: string) => void;
 }
 
-export function Editor({ value, onChange }: EditorProps) {
+export function Editor({ value, onChange, onSelectionChange }: EditorProps) {
+  function handleMount(editor: any) {
+    if (onSelectionChange) {
+      editor.onDidChangeCursorSelection(() => {
+        const selection = editor.getSelection();
+        if (selection) {
+          const text = editor.getModel()?.getValueInRange(selection) ?? "";
+          onSelectionChange(text);
+        }
+      });
+    }
+  }
+
   return (
     <div style={{ width: "100%", height: "100%" }}>
       <MonacoEditor
@@ -32,6 +45,7 @@ export function Editor({ value, onChange }: EditorProps) {
         theme="vs-dark"
         value={value ?? SAMPLE_HCL}
         onChange={onChange}
+        onMount={handleMount}
         options={{
           minimap: { enabled: false },
           fontSize: 14,
