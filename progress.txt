@@ -26,6 +26,7 @@ Project: terraform-town - Mock AWS Provider
 - S3 bucket policy handler: `createS3BucketPolicyHandler` in `packages/aws-mock/src/resources/s3-bucket-policy.ts`
 - S3 bucket policy ID is the bucket name (same as AWS behavior)
 - S3 bucket policy schema: bucket (required), policy (required), id (computed) — no nested blocks
+- Test runner: `scripts/run-tests.sh` — runs all story tests, updates prd.json, exits 0/1
 - Mock server: `createApp(statePath)` in `packages/aws-mock/src/index.ts` — Hono app with CRUD routes at `/resource/:type[/:id]`
 - Server testing: use `app.request(path, init)` — no real HTTP server needed
 - Adding new resource types: add handler to `handlers` map in `createApp()`
@@ -279,5 +280,19 @@ Project: terraform-town - Mock AWS Provider
   - Terraform resolves references before calling the provider — the mock just stores already-resolved values
   - `terraform show -json tfplan` provides structured plan output for verifying reference resolution
   - Destroy order is automatically correct — Terraform infers dependencies from references and destroys in reverse order
+---
+
+## 2026-02-20 - US-020
+- Created `scripts/run-tests.sh` — test runner that validates all 20 user stories
+- Maps each story to its test: prerequisite checks (US-001/002), bun test files (US-003–010), go build/test (US-011–013), integration tests (US-014–019), self-check (US-020)
+- Outputs pass/fail per story with colored output
+- Updates prd.json with passes: true/false using bun inline script
+- Exits 0 if all pass, 1 if any fail
+- Files changed: scripts/run-tests.sh, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - macOS default bash is v3 — no associative arrays (`declare -A`); use temp files instead
+  - `bun -e` is a good substitute for `jq` when updating JSON from bash scripts
+  - Go tests for US-012 and US-013 share the same test suite (`go test ./...` in provider dir)
+  - Script is self-referencing: US-020 checks that `scripts/run-tests.sh` is executable
 ---
 

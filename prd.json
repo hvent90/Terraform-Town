@@ -21,7 +21,10 @@
       "description": "Install terraform CLI for schema dumping and testing",
       "priority": 99,
       "passes": true,
-      "acceptanceCriteria": ["terraform version command succeeds", "Terraform version is >= 1.0"]
+      "acceptanceCriteria": [
+        "terraform version command succeeds",
+        "Terraform version is >= 1.0"
+      ]
     },
     {
       "id": "US-003",
@@ -256,7 +259,7 @@
       "title": "Test runner for Ralph",
       "description": "Script that runs all tests and updates prd.json",
       "priority": 70,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "scripts/run-tests.sh exists",
         "Runs all integration tests",
