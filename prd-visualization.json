@@ -174,7 +174,7 @@
       "title": "Ground with checkerboard",
       "description": "Ground plane has subtle checkerboard pattern",
       "priority": 87,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Ground is visible",
         "Checkerboard pattern applied",

@@ -582,3 +582,19 @@ Project: terraform-town - Mock AWS Provider
   - `line.userData.connectionId` enables test filtering of connection lines vs other scene children
 ---
 
+## 2026-02-20 - VIS-014
+- Implemented checkerboard ground plane using CanvasTexture from 2D canvas
+- Creates 2×2 tile pattern using theme colors, repeats 10× in each direction
+- Added `userData.isGround = true` for test identification
+- Fallback to solid color if checkerboard config not present
+- Null-safe ctx from `getContext('2d')` — jsdom doesn't support canvas 2D, pattern still works in real browser
+- Added 5 tests: visibility, texture applied, CanvasTexture type, horizontal rotation, below-resources position
+- All 107 tests pass, build succeeds
+- Files changed: packages/visualization/src/Visualization.ts, packages/visualization/tests/CheckerboardGround.test.ts
+- **Learnings for future iterations:**
+  - jsdom doesn't support `canvas.getContext('2d')` — need null check, canvas npm package would fix but isn't needed
+  - `THREE.CanvasTexture` accepts HTMLCanvasElement even without drawn content in test environment
+  - `texture.wrapS/wrapT = RepeatWrapping` + `repeat.set(n, n)` tiles the pattern across the plane
+  - `userData.isGround` distinguishes ground mesh from resource meshes in scene children
+---
+

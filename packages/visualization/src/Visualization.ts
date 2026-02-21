@@ -100,13 +100,40 @@ export class Visualization {
   }
   
   private setupGround(): void {
-    // TODO: Add checkerboard ground
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshBasicMaterial({ color: this.theme.ground.color })
-    );
+    const checker = this.theme.ground.checkerboard;
+    let material: THREE.MeshBasicMaterial;
+
+    if (checker) {
+      const canvas = document.createElement('canvas');
+      const tileSize = checker.size;
+      const tiles = 2;
+      canvas.width = tileSize * tiles;
+      canvas.height = tileSize * tiles;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        for (let row = 0; row < tiles; row++) {
+          for (let col = 0; col < tiles; col++) {
+            ctx.fillStyle = (row + col) % 2 === 0 ? checker.color1 : checker.color2;
+            ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(10, 10);
+
+      material = new THREE.MeshBasicMaterial({ map: texture });
+    } else {
+      material = new THREE.MeshBasicMaterial({ color: this.theme.ground.color });
+    }
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), material);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -1;
+    ground.userData = { isGround: true };
     this.scene.add(ground);
   }
   
