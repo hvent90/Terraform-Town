@@ -198,7 +198,7 @@
       "title": "Integration: Full EC2 stack renders",
       "description": "VPC → Subnet → Security Group → Instance renders correctly",
       "priority": 80,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "All 4 resource types render",
         "Correct colors per type",

@@ -616,3 +616,12 @@ Project: terraform-town - Mock AWS Provider
   - Test pulse by checking opacity changes after time advance, not exact values
 ---
 
+## 2026-02-20 - VIS-016
+- Integration test: Full EC2 stack (VPC → Subnet → Security Group → Instance) renders correctly
+- 5 tests: all types render, correct colors, containment proximity, connections visible, interactions work
+- All existing features (layout, connections, colors, interactions) work together end-to-end
+- No implementation changes needed — all prior stories provided the required functionality
+- All 116 tests pass, build succeeds
+- Files changed: packages/visualization/tests/EC2StackIntegration.test.ts
+---
+
