@@ -24,6 +24,7 @@ func Provider() *schema.Provider {
 			"aws_s3_bucket_policy": resourceS3BucketPolicy(),
 			"aws_vpc":              resourceVpc(),
 			"aws_subnet":           resourceSubnet(),
+			"aws_security_group":   resourceSecurityGroup(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

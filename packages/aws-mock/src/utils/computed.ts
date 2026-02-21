@@ -67,3 +67,7 @@ export function generateSubnetArn(subnetId: string, region: string): string {
 export function generateSubnetIpv6AssociationId(): string {
   return `subnet-cidr-assoc-${randomHex(17)}`;
 }
+
+export function generateSecurityGroupArn(sgId: string, region: string): string {
+  return `arn:aws:ec2:${region}:${MOCK_ACCOUNT_ID}:security-group/${sgId}`;
+}
