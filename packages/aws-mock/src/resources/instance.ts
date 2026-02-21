@@ -73,6 +73,8 @@ export function createInstanceHandler(store: StateStore): ResourceHandler {
         ebs_optimized: ctx.attributes.ebs_optimized ?? false,
         monitoring: ctx.attributes.monitoring ?? false,
         source_dest_check: ctx.attributes.source_dest_check ?? true,
+        ipv6_addresses: ctx.attributes.ipv6_addresses ?? [],
+        volume_tags: ctx.attributes.volume_tags ?? {},
         tags,
         tags_all: { ...tags },
       };

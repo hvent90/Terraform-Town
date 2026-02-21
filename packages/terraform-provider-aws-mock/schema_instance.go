@@ -166,6 +166,7 @@ func resourceInstanceSchema() map[string]*schema.Schema {
 		"source_dest_check": {
 			Type:     schema.TypeBool,
 			Optional: true,
+			Computed: true,
 		},
 		"spot_instance_request_id": {
 			Type:     schema.TypeString,
