@@ -1,0 +1,160 @@
+{
+  "name": "terraform-town-phase2",
+  "branchName": "ralph/ec2-stack",
+  "description": "Add EC2 stack resources (VPC, Subnet, Security Group, Instance) with semantic validation",
+  "userStories": [
+    {
+      "id": "US-021",
+      "title": "aws_vpc resource handler",
+      "description": "Implement Create/Read/Update/Delete for aws_vpc",
+      "priority": 69,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create accepts cidr_block, generates computed values (id, arn, default_network_acl_id, etc.)",
+        "Read returns stored VPC attributes",
+        "Update modifies VPC configuration",
+        "Delete removes VPC from state",
+        "Generated tests in tests/generated/aws_vpc/ pass"
+      ]
+    },
+    {
+      "id": "US-022",
+      "title": "aws_subnet resource handler",
+      "description": "Implement aws_subnet with VPC reference support",
+      "priority": 68,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create accepts cidr_block, vpc_id, availability_zone",
+        "vpc_id can reference aws_vpc.test.id",
+        "Generates computed values (id, arn, owner_id)",
+        "Generated tests in tests/generated/aws_subnet/ pass"
+      ]
+    },
+    {
+      "id": "US-023",
+      "title": "aws_security_group resource handler",
+      "description": "Implement aws_security_group with VPC reference",
+      "priority": 67,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create accepts name, description, vpc_id",
+        "vpc_id can reference aws_vpc.test.id",
+        "Generates computed values (id, arn, owner_id)",
+        "Generated tests in tests/generated/aws_security_group/ pass"
+      ]
+    },
+    {
+      "id": "US-024",
+      "title": "aws_instance resource handler",
+      "description": "Implement aws_instance with subnet and security group references",
+      "priority": 66,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create accepts ami, instance_type, subnet_id, vpc_security_group_ids",
+        "subnet_id can reference aws_subnet.test.id",
+        "vpc_security_group_ids can reference aws_security_group.test.id",
+        "Generates computed values (id, arn, private_ip, public_ip, instance_state)",
+        "Generated tests in tests/generated/aws_instance/ pass"
+      ]
+    },
+    {
+      "id": "US-025",
+      "title": "Go provider: Register EC2 stack schemas",
+      "description": "Add schemas for aws_vpc, aws_subnet, aws_security_group, aws_instance to Go provider",
+      "priority": 65,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform providers schema shows all 4 resource types",
+        "Schemas match AWS provider structure",
+        "All 4 resources registered in ResourcesMap"
+      ]
+    },
+    {
+      "id": "US-026",
+      "title": "Go provider: Wire EC2 stack CRUD to backend",
+      "description": "Connect Go provider CRUD functions to mock backend for all 4 resources",
+      "priority": 64,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Each resource has CreateContext, ReadContext, UpdateContext, DeleteContext",
+        "CRUD calls mock backend HTTP API",
+        "Computed values returned to Terraform"
+      ]
+    },
+    {
+      "id": "US-027",
+      "title": "Bucket naming validation",
+      "description": "Validate S3 bucket names follow DNS naming rules",
+      "priority": 63,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Names must be 3-63 characters",
+        "Names must be lowercase letters, numbers, and hyphens only",
+        "Names must start and end with letter or number",
+        "Invalid names return clear error message"
+      ]
+    },
+    {
+      "id": "US-028",
+      "title": "IAM policy JSON validation",
+      "description": "Validate IAM role trust policies are valid JSON",
+      "priority": 62,
+      "passes": false,
+      "acceptanceCriteria": [
+        "assume_role_policy must be valid JSON",
+        "Invalid JSON returns clear error",
+        "Valid JSON is accepted"
+      ]
+    },
+    {
+      "id": "US-029",
+      "title": "Region validation",
+      "description": "Validate region values are valid AWS regions",
+      "priority": 61,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Provider region must be a valid AWS region code",
+        "Invalid region returns clear error",
+        "Common regions accepted: us-east-1, us-west-2, eu-west-1, ap-southeast-1"
+      ]
+    },
+    {
+      "id": "US-030",
+      "title": "Reference existence check",
+      "description": "Validate that referenced resources exist before creating dependent resource",
+      "priority": 60,
+      "passes": false,
+      "acceptanceCriteria": [
+        "aws_instance.subnet_id must reference existing subnet",
+        "aws_instance.vpc_security_group_ids must reference existing security groups",
+        "Missing references return clear error",
+        "Valid references work correctly"
+      ]
+    },
+    {
+      "id": "US-031",
+      "title": "Integration: Full EC2 stack flow",
+      "description": "End-to-end test creating VPC → Subnet → Security Group → Instance",
+      "priority": 59,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform apply creates all 4 resources in correct order",
+        "terraform destroy removes in correct order",
+        "State contains all resources with correct attributes",
+        "Second plan shows no changes"
+      ]
+    },
+    {
+      "id": "US-032",
+      "title": "Update test runner for Phase 2",
+      "description": "Update scripts/run-tests.sh to include Phase 2 stories",
+      "priority": 58,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Test runner validates all Phase 2 stories",
+        "Generated tests included in test run",
+        "Updates prd.json with pass/fail status"
+      ]
+    }
+  ]
+}

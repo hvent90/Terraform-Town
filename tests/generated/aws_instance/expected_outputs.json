@@ -1,0 +1,8 @@
+{
+  "id": "i-4152226d2f98eb39e",
+  "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-88cfc816b58c770bc",
+  "primary_network_interface_id": "eni-255cd0e230b4b70e9",
+  "private_ip": "10.0.83.203",
+  "public_ip": "",
+  "instance_state": "running"
+}

@@ -18,3 +18,40 @@ const MOCK_ACCOUNT_ID = "123456789012";
 export function generateAccountId(): string {
   return MOCK_ACCOUNT_ID;
 }
+
+function randomHex(length: number): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, length);
+}
+
+export function generateVpcId(): string {
+  return `vpc-${randomHex(17)}`;
+}
+
+export function generateVpcArn(vpcId: string, region: string): string {
+  return `arn:aws:ec2:${region}:${MOCK_ACCOUNT_ID}:vpc/${vpcId}`;
+}
+
+export function generateNetworkAclId(): string {
+  return `acl-${randomHex(17)}`;
+}
+
+export function generateRouteTableId(): string {
+  return `rtb-${randomHex(17)}`;
+}
+
+export function generateSecurityGroupId(): string {
+  return `sg-${randomHex(17)}`;
+}
+
+export function generateDhcpOptionsId(): string {
+  return `dopt-${randomHex(17)}`;
+}
+
+export function generateIpv6AssociationId(): string {
+  return `vpc-cidr-assoc-${randomHex(17)}`;
+}

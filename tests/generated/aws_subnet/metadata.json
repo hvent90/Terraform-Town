@@ -1,0 +1,37 @@
+{
+  "resourceType": "aws_subnet",
+  "required": [
+    "vpc_id"
+  ],
+  "optional": [
+    "assign_ipv6_address_on_creation",
+    "availability_zone",
+    "availability_zone_id",
+    "cidr_block",
+    "customer_owned_ipv4_pool",
+    "enable_dns64",
+    "enable_lni_at_device_index",
+    "enable_resource_name_dns_a_record_on_launch",
+    "enable_resource_name_dns_aaaa_record_on_launch",
+    "ipv6_cidr_block",
+    "ipv6_native",
+    "map_customer_owned_ip_on_launch",
+    "map_public_ip_on_launch",
+    "outpost_arn",
+    "private_dns_hostname_type_on_launch",
+    "tags",
+    "tags_all"
+  ],
+  "computed": [
+    "arn",
+    "ipv6_cidr_block_association_id",
+    "owner_id"
+  ],
+  "nestedBlocks": [
+    "timeouts"
+  ],
+  "referencePatterns": {
+    "vpc_id": "aws_vpc"
+  },
+  "generatedAt": "2026-02-21T01:02:47.531Z"
+}

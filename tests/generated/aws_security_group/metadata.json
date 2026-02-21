@@ -1,0 +1,26 @@
+{
+  "resourceType": "aws_security_group",
+  "required": [],
+  "optional": [
+    "description",
+    "egress",
+    "ingress",
+    "name",
+    "name_prefix",
+    "revoke_rules_on_delete",
+    "tags",
+    "tags_all",
+    "vpc_id"
+  ],
+  "computed": [
+    "arn",
+    "owner_id"
+  ],
+  "nestedBlocks": [
+    "timeouts"
+  ],
+  "referencePatterns": {
+    "vpc_id": "aws_vpc"
+  },
+  "generatedAt": "2026-02-21T01:02:47.606Z"
+}

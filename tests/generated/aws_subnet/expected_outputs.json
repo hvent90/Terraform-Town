@@ -1,0 +1,8 @@
+{
+  "id": "subnet-1dc1dc8152f3d31b6",
+  "arn": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-53e9767e84c4f332d",
+  "cidr_block": "10.0.1.0/24",
+  "vpc_id": "",
+  "availability_zone": "us-east-1a",
+  "owner_id": "123456789012"
+}

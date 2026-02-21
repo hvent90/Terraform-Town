@@ -1,0 +1,9 @@
+{
+  "id": "vpc-747b3839ac49632f0",
+  "arn": "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-e7f530f39677ef49c",
+  "cidr_block": "10.0.0.0/16",
+  "default_network_acl_id": "acl-48f916687664fb51a",
+  "default_route_table_id": "rtb-08987b7d3593d4524",
+  "default_security_group_id": "sg-8c0dbffe7442711f9",
+  "owner_id": "123456789012"
+}
