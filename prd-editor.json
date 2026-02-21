@@ -137,7 +137,7 @@
       "title": "Editor content syncs to visualization",
       "description": "Changes in editor update visualization (via apply)",
       "priority": 85,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Click Apply",
         "Editor content sent to backend",
@@ -150,7 +150,7 @@
       "title": "Full integration test",
       "description": "End-to-end test of editor + assistant + viz",
       "priority": 80,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "User can edit HCL",
         "User can ask assistant questions",

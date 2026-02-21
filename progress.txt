@@ -829,3 +829,40 @@ Project: terraform-town - Mock AWS Provider
   - Quick actions area uses a separate div row with `borderTop` to visually separate from input area
 ---
 
+## 2026-02-21 - ED-011
+- Created HCL parser at `packages/editor/src/parseHcl.ts` — extracts resource blocks, attributes, and references from HCL text
+- Created `applyToVisualization()` at `packages/editor/src/applySync.ts` — parses HCL → TerraformState → calls viz.update()
+- Updated `packages/editor/src/index.tsx` — App component wires Toolbar Apply button → parse → visualization update
+- Added `three` and `@types/three` as devDependencies for integration testing
+- Updated test setup to import WebGL context stub from visualization package
+- 9 parseHcl tests + 7 ApplySync integration tests — all verify end-to-end flow
+- 73 editor tests pass, 131 visualization tests pass, build succeeds (88 modules)
+- Files changed: packages/editor/src/parseHcl.ts, packages/editor/src/applySync.ts, packages/editor/src/index.tsx, packages/editor/tests/parseHcl.test.ts, packages/editor/tests/ApplySync.test.ts, packages/editor/tests/setup.ts, packages/editor/package.json, bun.lock
+- **Learnings for future iterations:**
+  - HCL parser uses regex to extract `resource "type" "name" { ... }` blocks — sufficient for visualization, not a full parser
+  - Reference detection: `key = ref.path.id` and `key = [ref.path.id]` patterns map to connections
+  - Parent attributes (vpc_id, subnet_id) determine containment hierarchy in visualization
+  - Cross-package testing: editor tests that use Visualization need WebGL stub from visualization/tests/setup.ts
+  - `applyToVisualization` returns TerraformState so callers can inspect what was applied
+  - Visualization's `update()` handles create animations automatically — no extra animation code needed
+  - Multiple Three.js instances warning appears when editor and visualization use separate installs — harmless in tests
+---
+
+## 2026-02-21 - ED-012
+- Created full integration test at `packages/editor/tests/Integration.test.tsx` (4 tests)
+- Extracted `App` component from `index.tsx` into `packages/editor/src/App.tsx` for testability
+- App now wires all components together: Editor, AssistantPanel, Toolbar, Visualization
+- App accepts `onChat` prop to pass through to AssistantPanel (testable with mock generators)
+- Added `data-testid="editor-wrapper"` and `data-testid="vis-container"` for integration test assertions
+- Tests verify: editor renders, assistant chat works with streaming, apply button exists, visualization updates with HCL content including connections and animations
+- 77 editor tests pass, 131 visualization tests pass, both builds succeed
+- ALL 12 editor stories (ED-001 through ED-012) are now passing
+- Files changed: packages/editor/src/App.tsx (new), packages/editor/src/index.tsx (simplified), packages/editor/tests/Integration.test.tsx (new), prd-editor.json
+- **Learnings for future iterations:**
+  - Extracting App component from index.tsx enables testing without mounting to a real DOM root
+  - `onChat` prop on App allows tests to inject mock async generators without real LLM Gateway calls
+  - Monaco editor renders a loading spinner in jsdom — can verify wrapper exists but not editor content
+  - Full integration test combines parse+visualization flow directly (applyToVisualization) since Monaco can't type in jsdom
+  - jsdom `getContext('2d')` errors from Three.js are console noise, not test failures
+---
+
