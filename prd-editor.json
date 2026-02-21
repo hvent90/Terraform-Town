@@ -1,0 +1,162 @@
+{
+  "name": "terraform-town-editor-and-assistant",
+  "branchName": "ralph/editor-and-assistant",
+  "description": "Monaco code editor with HCL syntax highlighting and AI assistant powered by LLM Gateway",
+  "userStories": [
+    {
+      "id": "ED-001",
+      "title": "Monaco editor installed and configured",
+      "description": "Add Monaco editor package with Vite plugin for web workers",
+      "priority": 100,
+      "passes": true,
+      "acceptanceCriteria": [
+        "@monaco-editor/react installed",
+        "vite-plugin-monaco-editor configured",
+        "Editor renders in browser",
+        "No console errors"
+      ]
+    },
+    {
+      "id": "ED-002",
+      "title": "File explorer component",
+      "description": "Left sidebar with file tree for Terraform files",
+      "priority": 99,
+      "passes": false,
+      "acceptanceCriteria": [
+        "FileExplorer component exists",
+        "Shows file list with icons",
+        "Click selects file",
+        "Selected file highlighted"
+      ]
+    },
+    {
+      "id": "ED-003",
+      "title": "Monaco editor displays file content",
+      "description": "Editor shows HCL code with syntax highlighting",
+      "priority": 98,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Editor shows file content",
+        "HCL syntax highlighting works",
+        "Content updates on file switch",
+        "Dark theme applied"
+      ]
+    },
+    {
+      "id": "ED-004",
+      "title": "Split layout: editor + visualization",
+      "description": "Screen split with editor on left, visualization on right",
+      "priority": 97,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Editor panel on left",
+        "Visualization panel on right",
+        "Resizable split (optional)",
+        "Both visible simultaneously"
+      ]
+    },
+    {
+      "id": "ED-005",
+      "title": "Toolbar with Plan/Apply/Destroy buttons",
+      "description": "Action buttons to trigger Terraform operations",
+      "priority": 96,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Plan button exists",
+        "Apply button exists",
+        "Destroy button exists",
+        "Buttons trigger actions (stub ok for now)"
+      ]
+    },
+    {
+      "id": "ED-006",
+      "title": "LLM Gateway integration",
+      "description": "Add llm-gateway as dependency for AI assistant",
+      "priority": 95,
+      "passes": false,
+      "acceptanceCriteria": [
+        "llm-gateway package referenced",
+        "Can create agent harness",
+        "Basic invoke works"
+      ]
+    },
+    {
+      "id": "ED-007",
+      "title": "Assistant chat panel",
+      "description": "Right panel for AI assistant chat",
+      "priority": 94,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Chat panel component exists",
+        "Can type messages",
+        "Messages display in thread",
+        "Collapse/expand toggle"
+      ]
+    },
+    {
+      "id": "ED-008",
+      "title": "Assistant responds to HCL questions",
+      "description": "AI can answer questions about Terraform/HCL",
+      "priority": 93,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Assistant receives user message",
+        "LLM Gateway invoked with context",
+        "Response streams to chat",
+        "Context includes current file content"
+      ]
+    },
+    {
+      "id": "ED-009",
+      "title": "Assistant can explain resources",
+      "description": "AI explains selected resource in context",
+      "priority": 92,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Select resource in editor",
+        "Ask 'explain this'",
+        "Assistant explains selected block",
+        "Uses HCL knowledge"
+      ]
+    },
+    {
+      "id": "ED-010",
+      "title": "Assistant suggests improvements",
+      "description": "AI can suggest HCL improvements",
+      "priority": 91,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Ask 'how can I improve this?'",
+        "Assistant analyzes current file",
+        "Suggestions are relevant to HCL",
+        "Can apply suggestion (optional)"
+      ]
+    },
+    {
+      "id": "ED-011",
+      "title": "Editor content syncs to visualization",
+      "description": "Changes in editor update visualization (via apply)",
+      "priority": 85,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Click Apply",
+        "Editor content sent to backend",
+        "Visualization updates with new state",
+        "Animation shows changes"
+      ]
+    },
+    {
+      "id": "ED-012",
+      "title": "Full integration test",
+      "description": "End-to-end test of editor + assistant + viz",
+      "priority": 80,
+      "passes": false,
+      "acceptanceCriteria": [
+        "User can edit HCL",
+        "User can ask assistant questions",
+        "User can apply changes",
+        "Visualization updates correctly"
+      ]
+    }
+  ]
+}

@@ -666,3 +666,21 @@ Project: terraform-town - Mock AWS Provider
 - ALL 20 visualization stories (VIS-001 through VIS-020) are now passing
 ---
 
+## 2026-02-21 - ED-001
+- Created editor package at `packages/editor/` with React + Monaco Editor + Vite
+- Installed `@monaco-editor/react` v4.7, `react` v19, `@vitejs/plugin-react`
+- Created `Editor.tsx` component wrapping Monaco with vs-dark theme, HCL language, sample content
+- Created `index.tsx` entry point with React 19 `createRoot` and `index.html`
+- Configured `vite.config.ts` with React plugin and vitest (jsdom environment)
+- Added `tsconfig.json` with react-jsx, ESNext module, strict mode
+- 4 tests: module import, component exists, vite config check, render without throwing
+- Vite build succeeds (41 modules, 304ms)
+- All 131 visualization tests still pass (no regressions)
+- Files changed: packages/editor/package.json, vite.config.ts, tsconfig.json, index.html, src/Editor.tsx, src/index.tsx, tests/setup.ts, tests/Editor.test.tsx
+- **Learnings for future iterations:**
+  - `@monaco-editor/react` renders a loading spinner in SSR/jsdom — `renderToString` works for smoke testing
+  - `vite-plugin-monaco-editor` is not needed — `@monaco-editor/react` handles web worker loading via CDN by default
+  - vitest `import.meta.url` resolves to file:// in jsdom but URL pathname resolution breaks — use `process.cwd()` instead
+  - React 19 uses `createRoot` from `react-dom/client` (not `ReactDOM.render`)
+---
+
