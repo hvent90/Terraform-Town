@@ -42,7 +42,7 @@ export class Visualization {
     
     // Initialize managers
     this.resourceFactory = new ResourceFactory(this.theme);
-    this.animator = new Animator();
+    this.animator = new Animator((id) => this.resources.get(id));
     this.layout = new ForceLayout();
     this.stateSync = new StateSync();
     this.selection = new SelectionManager(this.camera, this.scene);

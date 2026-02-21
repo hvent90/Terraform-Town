@@ -123,7 +123,7 @@
       "title": "Double-click focuses camera",
       "description": "Double-click animates camera to center on resource",
       "priority": 91,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Double-click triggers camera animation",
         "Camera moves to resource",
@@ -136,7 +136,7 @@
       "title": "Create animation works",
       "description": "Resources animate in with fade + scale",
       "priority": 90,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "New resources start at scale 0",
         "Scale animates 0→1 over 300ms",

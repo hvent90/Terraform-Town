@@ -511,3 +511,44 @@ Project: terraform-town - Mock AWS Provider
   - `boundClick` and `boundKeyDown` follow same pattern as `boundMouseMove` for clean cleanup in `dispose()`
 ---
 
+## 2026-02-20 - VIS-010
+- Implemented double-click camera focus with smooth easeInOut cubic animation
+- Added `dblclick` event handler to `SelectionManager` using existing `raycastHit()` helper
+- Added `focusCamera(target, camera, duration)` method that sets up position interpolation
+- Added `updateFocusAnimation(deltaMs)` for per-frame animation updates
+- Focus event emits resource ID and mesh position; Visualization wires it to `focusCamera`
+- Camera animates to offset position (20 units above, 40 units behind target) over 600ms
+- Render loop calls `selection.updateFocusAnimation(16)` each frame
+- Added 9 tests: dblclick binding, focus event emission, position data, camera movement, offset, timing, smoothness, dispose cleanup
+- All 83 tests pass, build succeeds
+- Files changed: packages/visualization/src/interactions/Selection.ts, packages/visualization/src/Visualization.ts, packages/visualization/tests/DoubleclickFocus.test.ts
+- **Learnings for future iterations:**
+  - Camera focus animation lives in SelectionManager (not Animator) since Animator is still a stub — keeps things working
+  - `lerpVectors(start, end, t)` with easeInOut cubic provides smooth camera transitions
+  - Focus emits both resource ID and position to avoid re-looking up the mesh in Visualization
+  - Offset prevents camera from moving inside the mesh — `(0, 20, 40)` above/behind target
+  - `focusAnim` state tracks elapsed time for frame-independent animation
+---
+
+## 2026-02-20 - VIS-011
+- Implemented create animation with scale 0→1 and opacity 0→1 over 300ms
+- Rewrote Animator from stub to working implementation with mesh lookup, elapsed tracking, easing functions
+- Added `meshLookup` callback parameter to Animator constructor (resolves resource ID → Three.js Object3D)
+- Implemented `RunningAnimation` internal type tracking animation + elapsed time
+- Added `initAnimation()` to set initial state (scale 0, opacity 0) when create animation starts
+- Added `applyAnimation()` to interpolate scale/opacity based on eased progress
+- Implemented 6 easing functions: linear, easeIn/easeInQuad, easeOut/easeOutQuad, easeInOut, easeInOutCubic
+- Added `isRunning(id)` method for testing animation completion
+- Completed animations automatically removed from running map
+- Added 8 tests: initial scale/opacity, final scale/opacity, mid-animation, interruptibility, completion cleanup, restart
+- All 91 tests pass, build succeeds
+- Files changed: packages/visualization/src/animations/Animator.ts, packages/visualization/src/Visualization.ts, packages/visualization/tests/CreateAnimation.test.ts
+- **Learnings for future iterations:**
+  - Animator needs mesh access via callback — keeps separation of concerns (Animator doesn't own meshes)
+  - `initAnimation()` must be called in `processQueue()` before adding to running map, so mesh starts at correct initial state
+  - Three.js requires `material.transparent = true` for opacity < 1 to render correctly
+  - `mesh.scale.setScalar(v)` sets all three axes at once — cleaner than `set(v, v, v)`
+  - Easing functions take normalized time (0→1) and return eased progress (0→1)
+  - Both 'create' and 'destroy' animation types are handled (destroy is inverse of create)
+---
+
