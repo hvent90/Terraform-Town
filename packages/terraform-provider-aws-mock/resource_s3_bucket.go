@@ -24,7 +24,11 @@ func extractAttributes(d *schema.ResourceData, s map[string]*schema.Schema) map[
 			continue
 		}
 		if v, ok := d.GetOk(key); ok {
-			attrs[key] = v
+			if set, isSet := v.(*schema.Set); isSet {
+				attrs[key] = set.List()
+			} else {
+				attrs[key] = v
+			}
 		}
 	}
 	return attrs

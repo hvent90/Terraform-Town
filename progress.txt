@@ -328,3 +328,37 @@ Project: terraform-town - Mock AWS Provider
   - Same full stack pattern as VPC: TS handler + Go schema + Go CRUD + backend registration + generated test update
 ---
 
+## 2026-02-20 - US-023
+- Implemented aws_security_group resource handler with full CRUD in TypeScript backend
+- Added security group ARN generator (generateSecurityGroupArn) to computed.ts
+- Created Go provider schema with egress/ingress as TypeSet containing nested object schemas
+- Created Go provider CRUD wiring for aws_security_group
+- Registered handler in backend (index.ts) and Go provider (main.go)
+- Updated generated test to use proper provider mirror setup with VPC reference
+- Files changed: packages/aws-mock/src/resources/security-group.ts, packages/aws-mock/src/utils/computed.ts, packages/aws-mock/src/index.ts, packages/aws-mock/tests/security-group.test.ts, packages/terraform-provider-aws-mock/schema_security_group.go, packages/terraform-provider-aws-mock/resource_security_group.go, packages/terraform-provider-aws-mock/main.go, tests/generated/aws_security_group/aws_security_group.test.ts
+- **Learnings for future iterations:**
+  - aws_security_group has no required attributes — all are optional (name, description, vpc_id, egress, ingress, etc.)
+  - egress/ingress are complex set types with nested objects (cidr_blocks, from_port, to_port, protocol, etc.) — in Go schema use TypeSet with Elem: &schema.Resource
+  - Default description is "Managed by Terraform" when not provided (matches AWS behavior)
+  - Security group computed values: sg-xxx ID, arn, owner_id — same pattern as VPC/subnet
+  - generateSecurityGroupId() was already in computed.ts from VPC (generates default SG ID); reused for actual SG resources
+  - Same full stack pattern as VPC/subnet: TS handler + Go schema + Go CRUD + backend registration + generated test update
+---
+
+## 2026-02-20 - US-024
+- Implemented aws_instance resource handler with full CRUD in TypeScript backend
+- Added instance computed value generators (instance ID, ARN, ENI ID, private/public IP, private/public DNS)
+- Created Go provider schema and CRUD wiring for aws_instance
+- Registered handler in backend (index.ts) and Go provider (main.go)
+- Updated generated test with full EC2 stack (VPC → Subnet → Security Group → Instance) using proper provider mirror setup
+- Fixed `extractAttributes` in Go provider to convert `*schema.Set` to `[]interface{}` via `.List()` before JSON serialization
+- Files changed: packages/aws-mock/src/resources/instance.ts, packages/aws-mock/src/utils/computed.ts, packages/aws-mock/src/index.ts, packages/aws-mock/tests/instance.test.ts, packages/terraform-provider-aws-mock/schema_instance.go, packages/terraform-provider-aws-mock/resource_instance.go, packages/terraform-provider-aws-mock/main.go, packages/terraform-provider-aws-mock/resource_s3_bucket.go, tests/generated/aws_instance/aws_instance.test.ts
+- **Learnings for future iterations:**
+  - aws_instance has 0 required attributes — ami, instance_type, subnet_id, vpc_security_group_ids are all optional
+  - Instance computed values: i-xxx ID, arn, instance_state ("running"), private_ip (10.0.x.x), public_ip (only when associate_public_ip_address=true), private_dns (ip-x-x-x-x.ec2.internal), public_dns (ec2-x-x-x-x.compute-1.amazonaws.com), primary_network_interface_id (eni-xxx)
+  - Empty string defaults for instance_lifecycle, outpost_arn, password_data, spot_instance_request_id
+  - CRITICAL: `*schema.Set` from `d.GetOk()` for TypeSet fields contains a `SchemaSetFunc` that can't be JSON-serialized — must call `.List()` to convert to `[]interface{}` before sending to backend
+  - This fix to `extractAttributes` in resource_s3_bucket.go benefits all resources with TypeSet fields (security_group egress/ingress, instance vpc_security_group_ids, etc.)
+  - Generated integration test creates full EC2 stack (VPC, Subnet, Security Group, Instance) and verifies reference resolution between resources
+---
+

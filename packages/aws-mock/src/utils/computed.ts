@@ -71,3 +71,39 @@ export function generateSubnetIpv6AssociationId(): string {
 export function generateSecurityGroupArn(sgId: string, region: string): string {
   return `arn:aws:ec2:${region}:${MOCK_ACCOUNT_ID}:security-group/${sgId}`;
 }
+
+export function generateInstanceId(): string {
+  return `i-${randomHex(17)}`;
+}
+
+export function generateInstanceArn(instanceId: string, region: string): string {
+  return `arn:aws:ec2:${region}:${MOCK_ACCOUNT_ID}:instance/${instanceId}`;
+}
+
+export function generateEniId(): string {
+  return `eni-${randomHex(17)}`;
+}
+
+export function generatePrivateIp(): string {
+  const octet2 = Math.floor(Math.random() * 256);
+  const octet3 = Math.floor(Math.random() * 254) + 1;
+  return `10.0.${octet2}.${octet3}`;
+}
+
+export function generatePublicIp(): string {
+  const octet1 = Math.floor(Math.random() * 223) + 1;
+  const octet2 = Math.floor(Math.random() * 256);
+  const octet3 = Math.floor(Math.random() * 256);
+  const octet4 = Math.floor(Math.random() * 254) + 1;
+  return `${octet1}.${octet2}.${octet3}.${octet4}`;
+}
+
+export function generatePrivateDns(privateIp: string): string {
+  const dashed = privateIp.replace(/\./g, "-");
+  return `ip-${dashed}.ec2.internal`;
+}
+
+export function generatePublicDns(publicIp: string): string {
+  const dashed = publicIp.replace(/\./g, "-");
+  return `ec2-${dashed}.compute-1.amazonaws.com`;
+}

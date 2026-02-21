@@ -5,6 +5,7 @@ import { createS3BucketPolicyHandler } from "./resources/s3-bucket-policy";
 import { createVpcHandler } from "./resources/vpc";
 import { createSubnetHandler } from "./resources/subnet";
 import { createSecurityGroupHandler } from "./resources/security-group";
+import { createInstanceHandler } from "./resources/instance";
 import type { ResourceHandler } from "./resources/types";
 
 export function createApp(statePath: string) {
@@ -17,6 +18,7 @@ export function createApp(statePath: string) {
     aws_vpc: createVpcHandler(store),
     aws_subnet: createSubnetHandler(store),
     aws_security_group: createSecurityGroupHandler(store),
+    aws_instance: createInstanceHandler(store),
   };
 
   // Create

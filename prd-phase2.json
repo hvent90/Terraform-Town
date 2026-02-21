@@ -35,7 +35,7 @@
       "title": "aws_security_group resource handler",
       "description": "Implement aws_security_group with VPC reference",
       "priority": 67,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create accepts name, description, vpc_id",
         "vpc_id can reference aws_vpc.test.id",
@@ -48,7 +48,7 @@
       "title": "aws_instance resource handler",
       "description": "Implement aws_instance with subnet and security group references",
       "priority": 66,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create accepts ami, instance_type, subnet_id, vpc_security_group_ids",
         "subnet_id can reference aws_subnet.test.id",
