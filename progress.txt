@@ -45,6 +45,8 @@ Project: terraform-town - Mock AWS Provider
 - TF provider source: `terraform-town/aws-mock` version `0.1.0`, local name `aws` in required_providers
 - TF CLI config: `TF_CLI_CONFIG_FILE` env var points to .terraformrc with filesystem_mirror pointing to local binary
 - Filesystem mirror layout: `mirror/registry.terraform.io/terraform-town/aws-mock/0.1.0/<os>_<arch>/terraform-provider-aws-mock_v0.1.0`
+- Backend for integration tests: `startBackend(statePath)` in helpers.ts — returns `{ url, stop }`, uses random port via `Bun.serve({ port: 0 })`
+- Terraform state structure: `state.resources[].type`, `.name`, `.instances[].attributes` — parse with JSON.parse after apply
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -227,5 +229,29 @@ Project: terraform-town - Mock AWS Provider
   - Computed values show as "(known after apply)" in plan output — provider doesn't need to generate actual values during plan
   - The existing `setupTerraformEnv` + `terraform` helpers from US-014 work perfectly for plan tests
   - Plan output contains "1 to add, 0 to change, 0 to destroy" format
+---
+
+## 2026-02-20 - US-016
+- Created integration test for `terraform apply` at `tests/integration/terraform-apply.test.ts`
+- Added `startBackend(statePath)` helper to `tests/integration/helpers.ts` — starts Hono mock server on random port
+- 4 tests: apply succeeds, tfstate exists, state contains aws_s3_bucket resource, state contains computed values (arn, id, domain, region)
+- Files changed: tests/integration/helpers.ts, tests/integration/terraform-apply.test.ts
+- **Learnings for future iterations:**
+  - `terraform apply` requires a running mock backend (unlike plan which doesn't call the provider for new resources)
+  - `startBackend(statePath)` uses `Bun.serve({ port: 0 })` to get a random available port — avoids port conflicts in parallel tests
+  - `terraform apply -auto-approve` skips the interactive confirmation prompt
+  - Terraform state file (`terraform.tfstate`) stores resources in `state.resources[]` array with `type`, `name`, and `instances[].attributes`
+  - The `startBackend` helper is reusable for US-017 through US-019 — any test that needs the provider to make real CRUD calls
+---
+
+## 2026-02-20 - US-017
+- Created integration test for no-drift verification at `tests/integration/terraform-no-drift.test.ts`
+- 3 tests: plan after apply shows "No changes", -detailed-exitcode returns 0, computed values match in state
+- Files changed: tests/integration/terraform-no-drift.test.ts
+- **Learnings for future iterations:**
+  - The provider's Read + setAttributes + backend state store already produce consistent values — no drift fixes needed
+  - `terraform plan -detailed-exitcode` returns 0 for no changes, 1 for error, 2 for changes present — useful for programmatic checks
+  - `terraform show -json terraform.tfstate` provides structured JSON output of state for validation
+  - State JSON structure: `values.root_module.resources[].values` contains the attribute map
 ---
 

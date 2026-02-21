@@ -206,7 +206,7 @@
       "title": "Integration: terraform apply",
       "description": "Apply creates state file",
       "priority": 78,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform apply succeeds",
         "terraform.tfstate file exists",
@@ -219,7 +219,7 @@
       "title": "Integration: no drift on second plan",
       "description": "Second plan after apply shows no changes",
       "priority": 77,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform plan (after apply) shows 'No changes'",
         "State is consistent",
