@@ -730,3 +730,35 @@ Project: terraform-town - Mock AWS Provider
   - Resizable split marked as optional in acceptance criteria — basic 50/50 split sufficient
 ---
 
+## 2026-02-21 - ED-005
+- Created Toolbar component at `packages/editor/src/Toolbar.tsx`
+- Created tests at `packages/editor/tests/Toolbar.test.tsx` (7 tests)
+- Three action buttons: Plan, Apply, Destroy with `data-testid` attributes
+- Each button accepts optional callback prop (`onPlan`, `onApply`, `onDestroy`)
+- Destroy button styled red to indicate destructive action
+- Dark theme styling consistent with FileExplorer (background #1e1e1e, border #333)
+- 31 editor tests pass, 131 visualization tests pass, build succeeds (42 modules)
+- Files changed: packages/editor/src/Toolbar.tsx, packages/editor/tests/Toolbar.test.tsx
+- **Learnings for future iterations:**
+  - Same `render()` + `act()` pattern from FileExplorer tests works for all React components
+  - `data-testid="btn-plan"` convention enables reliable querying in tests
+  - Callbacks are optional — buttons work without handlers (no crash on click when no callback provided)
+---
+
+## 2026-02-21 - ED-006
+- Added llm-gateway as `file:` dependency in editor package (references `~/repos/llm-gateway`)
+- Created `assistant.ts` module wrapping `createAgentHarness` with simple `chat()` and `ask()` APIs
+- Created logger stub at `tests/stubs/logger.ts` to handle Bun-only `import.meta.dir` in vitest
+- Configured vite alias to redirect llm-gateway's logger.ts to stub during tests
+- 6 tests: module import, harness creation, assistant creation, text event streaming, ask() concatenation, system context
+- 37 editor tests pass, 131 visualization tests pass, build succeeds (42 modules)
+- Files changed: packages/editor/package.json, vite.config.ts, src/assistant.ts, tests/assistant.test.ts, tests/stubs/logger.ts
+- **Learnings for future iterations:**
+  - llm-gateway uses `import.meta.dir` (Bun-only) in its logger — need stub for vitest/Node.js
+  - Vite `resolve.alias` with `find` as absolute file path can redirect internal relative imports within node_modules
+  - `createDeterministicHarness` from llm-gateway is perfect for testing — scripted responses without API calls
+  - Agent harness wraps provider harness: single-iteration provider → agentic loop with tool execution
+  - `file:` dependency in package.json creates a symlink in node_modules via bun install
+  - `HarnessEvent` discriminated union: text, reasoning, tool_call, tool_result, usage, error, relay, harness_start/end
+---
+

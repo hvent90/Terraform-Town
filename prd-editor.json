@@ -60,7 +60,7 @@
       "title": "Toolbar with Plan/Apply/Destroy buttons",
       "description": "Action buttons to trigger Terraform operations",
       "priority": 96,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Plan button exists",
         "Apply button exists",
@@ -73,7 +73,7 @@
       "title": "LLM Gateway integration",
       "description": "Add llm-gateway as dependency for AI assistant",
       "priority": 95,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "llm-gateway package referenced",
         "Can create agent harness",
