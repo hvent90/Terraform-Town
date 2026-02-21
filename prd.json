@@ -181,7 +181,7 @@
       "title": "Integration: terraform init",
       "description": "Provider installs correctly via terraform init",
       "priority": 80,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform init succeeds",
         "No error messages",
@@ -193,7 +193,7 @@
       "title": "Integration: terraform plan",
       "description": "Single resource plan works",
       "priority": 79,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform plan for aws_s3_bucket succeeds",
         "Plan shows '1 to add'",

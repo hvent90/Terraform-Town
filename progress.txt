@@ -40,6 +40,11 @@ Project: terraform-town - Mock AWS Provider
 - CRUD wiring: `client.go` MockClient calls backend HTTP API; `resource_<name>.go` has CRUD functions using extractAttributes/setAttributes
 - Provider config: `backend_url` (default `http://localhost:3000`), env var `AWS_MOCK_BACKEND_URL`
 - CRUD pattern: extractAttributes skips computed-only fields, setAttributes maps backend response to ResourceData
+- Integration tests: `tests/integration/*.test.ts` — use `setupTerraformEnv(tfConfig)` helper from `tests/integration/helpers.ts`
+- TF test env: creates temp dir with filesystem mirror, .terraformrc, and main.tf; returns `{ workDir, cleanup }`
+- TF provider source: `terraform-town/aws-mock` version `0.1.0`, local name `aws` in required_providers
+- TF CLI config: `TF_CLI_CONFIG_FILE` env var points to .terraformrc with filesystem_mirror pointing to local binary
+- Filesystem mirror layout: `mirror/registry.terraform.io/terraform-town/aws-mock/0.1.0/<os>_<arch>/terraform-provider-aws-mock_v0.1.0`
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -197,5 +202,30 @@ Project: terraform-town - Mock AWS Provider
   - `d.GetOk` returns false for zero values — backend handles defaults (e.g., force_destroy=false)
   - ReadResource returns nil on 404, causing `d.SetId("")` to remove resource from Terraform state
   - Go httptest.NewServer is ideal for testing HTTP client without starting real backend
+---
+
+## 2026-02-20 - US-014
+- Created integration test infrastructure for terraform init
+- Created `tests/integration/helpers.ts` — shared helper with `buildProvider()`, `setupTerraformEnv()`, `terraform()` functions
+- Created `tests/integration/terraform-init.test.ts` — 3 tests verifying init succeeds, no errors, and provider appears in .terraform/providers/
+- Files changed: tests/integration/helpers.ts, tests/integration/terraform-init.test.ts
+- **Learnings for future iterations:**
+  - Terraform local provider discovery uses filesystem_mirror with unpacked layout
+  - Mirror directory structure: `mirror/registry.terraform.io/<namespace>/<type>/<version>/<os>_<arch>/terraform-provider-<type>_v<version>`
+  - `TF_CLI_CONFIG_FILE` env var overrides default CLI config — essential for isolated test environments
+  - Provider source `terraform-town/aws-mock` with local name `aws` allows `aws_*` resources to bind to the mock provider
+  - `setupTerraformEnv(tfConfig)` is reusable for US-015 through US-019 — creates temp dir with full mirror setup
+  - Terraform init with filesystem_mirror doesn't require network access or registry
+---
+
+## 2026-02-20 - US-015
+- Created integration test for `terraform plan` at `tests/integration/terraform-plan.test.ts`
+- 4 tests: plan succeeds, shows "1 to add", shows computed values (arn as "known after apply"), no errors
+- Files changed: tests/integration/terraform-plan.test.ts
+- **Learnings for future iterations:**
+  - `terraform plan` for new resources does NOT call the backend — it just computes the diff from config vs empty state
+  - Computed values show as "(known after apply)" in plan output — provider doesn't need to generate actual values during plan
+  - The existing `setupTerraformEnv` + `terraform` helpers from US-014 work perfectly for plan tests
+  - Plan output contains "1 to add, 0 to change, 0 to destroy" format
 ---
 
