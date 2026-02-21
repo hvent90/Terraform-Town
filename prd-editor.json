@@ -111,7 +111,7 @@
       "title": "Assistant can explain resources",
       "description": "AI explains selected resource in context",
       "priority": 92,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Select resource in editor",
         "Ask 'explain this'",
@@ -124,7 +124,7 @@
       "title": "Assistant suggests improvements",
       "description": "AI can suggest HCL improvements",
       "priority": 91,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Ask 'how can I improve this?'",
         "Assistant analyzes current file",

@@ -798,3 +798,34 @@ Project: terraform-town - Mock AWS Provider
   - `onChat` callback pattern decouples the UI from llm-gateway — parent wires real assistant, tests provide mock generators
 ---
 
+## 2026-02-21 - ED-009
+- Added `selectedText` prop to AssistantPanel and updated `onChat` signature to pass it as third argument
+- Added `onSelectionChange` prop to Editor component — wires Monaco `onDidChangeCursorSelection` to report selected text
+- Editor uses `onMount` callback to access Monaco editor instance and subscribe to selection changes
+- `editor.getModel()?.getValueInRange(selection)` extracts the selected text from Monaco
+- 4 tests: selectedText passed to onChat, assistant explains selected block, both file and selection context, backwards compatible without selectedText
+- 53 editor tests pass, 131 visualization tests pass, build succeeds (42 modules)
+- Files changed: packages/editor/src/AssistantPanel.tsx, packages/editor/src/Editor.tsx, packages/editor/tests/AssistantExplain.test.tsx
+- **Learnings for future iterations:**
+  - Monaco `onDidChangeCursorSelection` fires on every cursor/selection change — good for live selectedText tracking
+  - `editor.getSelection()` returns an ISelection; `editor.getModel()?.getValueInRange(selection)` gets the text
+  - Adding optional props (selectedText, onSelectionChange) is backwards-compatible — existing tests pass without changes
+  - `onChat` 3rd parameter pattern keeps the API simple while supporting optional context layering (file + selection)
+---
+
+## 2026-02-21 - ED-010
+- Added "Suggest Improvements" quick-action button to AssistantPanel
+- Extracted `streamResponse()` helper from `handleSend()` to reuse streaming logic
+- Button sends canned prompt "How can I improve this HCL code?" via `onChat` with file content
+- Suggestions stream into chat thread as assistant messages (same UX as manual chat)
+- Quick actions bar sits between chat thread and text input area
+- 4 tests: button exists, sends improvement request with file content, suggestions stream to thread, HCL-relevant analysis
+- 57 editor tests pass, 131 visualization tests pass, build succeeds (42 modules)
+- Files changed: packages/editor/src/AssistantPanel.tsx, packages/editor/tests/AssistantSuggest.test.tsx
+- **Learnings for future iterations:**
+  - Extracting `streamResponse(userMessage)` from `handleSend()` enables reuse for quick-action buttons without duplicating streaming logic
+  - Quick-action buttons that call `streamResponse()` with a canned prompt are a simple pattern for pre-built assistant actions
+  - Same `onChat` callback receives the improvement request — no new API surface needed
+  - Quick actions area uses a separate div row with `borderTop` to visually separate from input area
+---
+

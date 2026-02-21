@@ -22,15 +22,12 @@ export function AssistantPanel({ fileContent, selectedText, onChat }: AssistantP
   const [streaming, setStreaming] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  function handleSend() {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
-    setInput("");
+  function streamResponse(userMessage: string) {
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
 
     if (onChat) {
       setStreaming(true);
-      const iter = onChat(trimmed, fileContent, selectedText);
+      const iter = onChat(userMessage, fileContent, selectedText);
       (async () => {
         let response = "";
         let added = false;
@@ -48,6 +45,17 @@ export function AssistantPanel({ fileContent, selectedText, onChat }: AssistantP
         setStreaming(false);
       })();
     }
+  }
+
+  function handleSend() {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setInput("");
+    streamResponse(trimmed);
+  }
+
+  function handleSuggest() {
+    streamResponse("How can I improve this HCL code?");
   }
 
   return (
@@ -129,6 +137,31 @@ export function AssistantPanel({ fileContent, selectedText, onChat }: AssistantP
               Thinking...
             </div>
           )}
+
+          <div
+            style={{
+              display: "flex",
+              gap: "6px",
+              padding: "4px 8px",
+              borderTop: "1px solid #333",
+            }}
+          >
+            <button
+              data-testid="btn-suggest"
+              onClick={handleSuggest}
+              style={{
+                background: "#2d2d2d",
+                color: "#8bb4d9",
+                border: "1px solid #555",
+                padding: "3px 10px",
+                cursor: "pointer",
+                fontSize: "12px",
+                borderRadius: "3px",
+              }}
+            >
+              Suggest Improvements
+            </button>
+          </div>
 
           <div
             style={{
