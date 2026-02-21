@@ -564,3 +564,21 @@ Project: terraform-town - Mock AWS Provider
   - Completion check must reference mesh before deleting from running map
 ---
 
+## 2026-02-20 - VIS-013
+- Implemented connection lines between related resources in `upsertConnection()` in Visualization.ts
+- Lines use `THREE.Line` with `BufferGeometry` (2 points × 3 components) and `LineBasicMaterial` (cyan, 30% opacity)
+- Connection key format: `${from}->${to}` stored in connections Map
+- Lines update positions each `update()` call by reading current mesh positions
+- Skips connections where either resource mesh doesn't exist
+- Added `connectionId` to `line.userData` for test identification
+- Fixed unused `Animation` import — changed to `Connection` import
+- Added 6 tests: line creation, position count, material opacity, position updates, missing resource skip, dedup
+- All 102 tests pass, build succeeds
+- Files changed: packages/visualization/src/Visualization.ts, packages/visualization/tests/ConnectionLines.test.ts
+- **Learnings for future iterations:**
+  - `BufferAttribute.needsUpdate = true` required after modifying positions for Three.js to re-upload to GPU
+  - `Float32Array(6)` for 2 points × 3 components (x,y,z) — preallocated for performance
+  - Connection lines cyan at 30% opacity match TRON theme without being distracting
+  - `line.userData.connectionId` enables test filtering of connection lines vs other scene children
+---
+

@@ -162,7 +162,7 @@
       "title": "Connection lines render",
       "description": "References between resources shown as lines",
       "priority": 88,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Lines connect related resources",
         "Lines are visible but not distracting",

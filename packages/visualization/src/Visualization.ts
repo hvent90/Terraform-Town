@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { Theme, TerraformState, Resource, Animation } from './types';
+import type { Theme, TerraformState, Resource, Connection } from './types';
 import { defaultTheme } from './themes/default';
 import { ResourceFactory } from './resources/ResourceFactory';
 import { Animator } from './animations/Animator';
@@ -180,7 +180,35 @@ export class Visualization {
   }
   
   private upsertConnection(conn: Connection): void {
-    // TODO: Implement connection lines
+    const fromMesh = this.resources.get(conn.from);
+    const toMesh = this.resources.get(conn.to);
+    if (!fromMesh || !toMesh) return;
+
+    const key = `${conn.from}->${conn.to}`;
+    let line = this.connections.get(key);
+
+    if (!line) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(6); // 2 points × 3 components
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const material = new THREE.LineBasicMaterial({
+        color: 0x00ffff,
+        transparent: true,
+        opacity: 0.3,
+      });
+
+      line = new THREE.Line(geometry, material);
+      line.userData = { connectionId: key };
+      this.scene.add(line);
+      this.connections.set(key, line);
+    }
+
+    // Update positions to match current resource positions
+    const posAttr = line.geometry.getAttribute('position') as THREE.BufferAttribute;
+    posAttr.setXYZ(0, fromMesh.position.x, fromMesh.position.y, fromMesh.position.z);
+    posAttr.setXYZ(1, toMesh.position.x, toMesh.position.y, toMesh.position.z);
+    posAttr.needsUpdate = true;
   }
   
   focus(resourceId: string): void {
