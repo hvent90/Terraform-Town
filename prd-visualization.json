@@ -212,7 +212,7 @@
       "title": "Integration: Update from terraform apply",
       "description": "Visualization updates when terraform apply creates resources",
       "priority": 79,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform apply triggers update",
         "Resources animate in",

@@ -625,3 +625,13 @@ Project: terraform-town - Mock AWS Provider
 - Files changed: packages/visualization/tests/EC2StackIntegration.test.ts
 ---
 
+## 2026-02-20 - VIS-017
+- Integration test: StateSync.parseState() → Visualization.update() pipeline
+- 6 tests: resources appear, animate in (scale 0), types parsed, connections extracted, parent relationships, incremental apply
+- Tests real terraform.tfstate JSON format (version 4, resources array with instances)
+- Verifies incremental updates: first apply adds VPC, second apply adds subnet with animation
+- No implementation changes needed — StateSync + Visualization pipeline already worked
+- All 122 tests pass, build succeeds
+- Files changed: packages/visualization/tests/TerraformApplyUpdate.test.ts
+---
+
