@@ -85,7 +85,7 @@
       "title": "Assistant chat panel",
       "description": "Right panel for AI assistant chat",
       "priority": 94,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Chat panel component exists",
         "Can type messages",
@@ -98,7 +98,7 @@
       "title": "Assistant responds to HCL questions",
       "description": "AI can answer questions about Terraform/HCL",
       "priority": 93,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Assistant receives user message",
         "LLM Gateway invoked with context",

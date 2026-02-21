@@ -762,3 +762,39 @@ Project: terraform-town - Mock AWS Provider
   - `HarnessEvent` discriminated union: text, reasoning, tool_call, tool_result, usage, error, relay, harness_start/end
 ---
 
+## 2026-02-21 - ED-007
+- Created AssistantPanel component at `packages/editor/src/AssistantPanel.tsx`
+- Created tests at `packages/editor/tests/AssistantPanel.test.tsx` (8 tests)
+- Chat panel with message thread, text input, send button, and collapse/expand toggle
+- Messages stored in React state with `role` (user/assistant) and `content`
+- Empty messages are not sent (trim check)
+- Input clears after sending
+- Dark theme styling consistent with other editor components (#1e1e1e background, #333 borders)
+- 45 editor tests pass, 131 visualization tests pass, build succeeds (42 modules)
+- Files changed: packages/editor/src/AssistantPanel.tsx, packages/editor/tests/AssistantPanel.test.tsx
+- **Learnings for future iterations:**
+  - `onInput` event with `(e.target as HTMLTextAreaElement).value` works for controlled textarea in React
+  - `rows` is an HTML attribute on textarea, not a CSS property — don't put in `style` object
+  - Collapse/expand toggle hides the chat thread and input via conditional rendering (`{!collapsed && ...}`)
+  - `data-role` attribute on message divs enables role-based assertions in tests
+  - Same `render()` + `act()` pattern from other editor tests works for stateful components
+  - Native input value setter trick needed to programmatically set textarea value in jsdom tests
+---
+
+## 2026-02-21 - ED-008
+- Added `onChat` and `fileContent` props to AssistantPanel for LLM Gateway integration
+- `onChat` callback: `(message: string, fileContent?: string) => AsyncIterable<string>` — yields response chunks
+- Component streams response into an assistant message in the chat thread, updating in-place as chunks arrive
+- Added streaming indicator ("Thinking...") shown via `data-testid="chat-streaming"` while response is being generated
+- Used closure `added` flag to track whether assistant message has been appended (avoids stale React state closure)
+- Backwards-compatible: component works without props (ED-007 behavior preserved)
+- 4 tests: callback receives message, response streams to chat, context includes file content, no-prop fallback
+- 49 editor tests pass, 131 visualization tests pass, build succeeds (42 modules)
+- Files changed: packages/editor/src/AssistantPanel.tsx, packages/editor/tests/AssistantChat.test.tsx
+- **Learnings for future iterations:**
+  - React `useState` setter closures capture stale state — use local variables (not state) to track async progress within a single operation
+  - `async function*` generators are clean testable abstractions for streaming AI responses
+  - React `act(async () => { ... })` flushes state updates but timing of mid-stream DOM assertions is unreliable — test final state instead
+  - `onChat` callback pattern decouples the UI from llm-gateway — parent wires real assistant, tests provide mock generators
+---
+

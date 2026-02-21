@@ -5,10 +5,19 @@ interface ChatMessage {
   content: string;
 }
 
-export function AssistantPanel() {
+export interface AssistantPanelProps {
+  fileContent?: string;
+  onChat?: (
+    message: string,
+    fileContent?: string,
+  ) => AsyncIterable<string>;
+}
+
+export function AssistantPanel({ fileContent, onChat }: AssistantPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [collapsed, setCollapsed] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   function handleSend() {
@@ -16,6 +25,27 @@ export function AssistantPanel() {
     if (!trimmed) return;
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
+
+    if (onChat) {
+      setStreaming(true);
+      const iter = onChat(trimmed, fileContent);
+      (async () => {
+        let response = "";
+        let added = false;
+        for await (const chunk of iter) {
+          response += chunk;
+          const snap = response;
+          setMessages((prev) => {
+            if (added) {
+              return [...prev.slice(0, -1), { role: "assistant", content: snap }];
+            }
+            added = true;
+            return [...prev, { role: "assistant", content: snap }];
+          });
+        }
+        setStreaming(false);
+      })();
+    }
   }
 
   return (
@@ -84,6 +114,19 @@ export function AssistantPanel() {
               </div>
             ))}
           </div>
+
+          {streaming && (
+            <div
+              data-testid="chat-streaming"
+              style={{
+                padding: "4px 8px",
+                fontSize: "12px",
+                color: "#888",
+              }}
+            >
+              Thinking...
+            </div>
+          )}
 
           <div
             style={{
