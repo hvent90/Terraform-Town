@@ -4,6 +4,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { StateStore } from "../src/state/store";
 import { createInstanceHandler } from "../src/resources/instance";
+import { createSubnetHandler } from "../src/resources/subnet";
+import { createSecurityGroupHandler } from "../src/resources/security-group";
+import { createVpcHandler } from "../src/resources/vpc";
 
 describe("aws_instance handler", () => {
   let tempDir: string;
@@ -22,21 +25,37 @@ describe("aws_instance handler", () => {
 
   describe("create", () => {
     test("accepts ami, instance_type, subnet_id, vpc_security_group_ids", async () => {
+      const vpcHandler = createVpcHandler(store);
+      const subnetHandler = createSubnetHandler(store);
+      const sgHandler = createSecurityGroupHandler(store);
+      const vpc = await vpcHandler.create({
+        resourceType: "aws_vpc",
+        attributes: { cidr_block: "10.0.0.0/16" },
+      });
+      const subnet = await subnetHandler.create({
+        resourceType: "aws_subnet",
+        attributes: { vpc_id: vpc.id, cidr_block: "10.0.1.0/24" },
+      });
+      const sg = await sgHandler.create({
+        resourceType: "aws_security_group",
+        attributes: { name: "test-sg", vpc_id: vpc.id },
+      });
+
       const result = await handler.create({
         resourceType: "aws_instance",
         attributes: {
           ami: "ami-0c55b159cbfafe1f0",
           instance_type: "t2.micro",
-          subnet_id: "subnet-abc123",
-          vpc_security_group_ids: ["sg-abc123"],
+          subnet_id: subnet.id,
+          vpc_security_group_ids: [sg.id],
         },
       });
 
       expect(result.id).toMatch(/^i-/);
       expect(result.attributes.ami).toBe("ami-0c55b159cbfafe1f0");
       expect(result.attributes.instance_type).toBe("t2.micro");
-      expect(result.attributes.subnet_id).toBe("subnet-abc123");
-      expect(result.attributes.vpc_security_group_ids).toEqual(["sg-abc123"]);
+      expect(result.attributes.subnet_id).toBe(subnet.id);
+      expect(result.attributes.vpc_security_group_ids).toEqual([sg.id]);
     });
 
     test("generates all computed attributes", async () => {
@@ -185,34 +204,119 @@ describe("aws_instance handler", () => {
     });
   });
 
-  describe("references", () => {
-    test("subnet_id can store a resolved reference value", async () => {
-      const result = await handler.create({
-        resourceType: "aws_instance",
-        attributes: {
-          ami: "ami-0c55b159cbfafe1f0",
-          instance_type: "t2.micro",
-          subnet_id: "subnet-0abc123def456789a",
-        },
-      });
-
-      expect(result.attributes.subnet_id).toBe("subnet-0abc123def456789a");
+  describe("reference validation", () => {
+    test("rejects subnet_id that does not exist in state", async () => {
+      expect(
+        handler.create({
+          resourceType: "aws_instance",
+          attributes: {
+            ami: "ami-0c55b159cbfafe1f0",
+            instance_type: "t2.micro",
+            subnet_id: "subnet-nonexistent",
+          },
+        }),
+      ).rejects.toThrow(/subnet.*subnet-nonexistent.*not found/i);
     });
 
-    test("vpc_security_group_ids can store resolved reference values", async () => {
+    test("rejects vpc_security_group_ids that do not exist in state", async () => {
+      expect(
+        handler.create({
+          resourceType: "aws_instance",
+          attributes: {
+            ami: "ami-0c55b159cbfafe1f0",
+            instance_type: "t2.micro",
+            vpc_security_group_ids: ["sg-nonexistent"],
+          },
+        }),
+      ).rejects.toThrow(/security group.*sg-nonexistent.*not found/i);
+    });
+
+    test("rejects when one of multiple security groups does not exist", async () => {
+      const sgHandler = createSecurityGroupHandler(store);
+      const vpcHandler = createVpcHandler(store);
+      const vpc = await vpcHandler.create({
+        resourceType: "aws_vpc",
+        attributes: { cidr_block: "10.0.0.0/16" },
+      });
+      const sg = await sgHandler.create({
+        resourceType: "aws_security_group",
+        attributes: { name: "test-sg", vpc_id: vpc.id },
+      });
+
+      expect(
+        handler.create({
+          resourceType: "aws_instance",
+          attributes: {
+            ami: "ami-0c55b159cbfafe1f0",
+            instance_type: "t2.micro",
+            vpc_security_group_ids: [sg.id, "sg-nonexistent"],
+          },
+        }),
+      ).rejects.toThrow(/security group.*sg-nonexistent.*not found/i);
+    });
+
+    test("accepts valid subnet_id reference", async () => {
+      const vpcHandler = createVpcHandler(store);
+      const subnetHandler = createSubnetHandler(store);
+      const vpc = await vpcHandler.create({
+        resourceType: "aws_vpc",
+        attributes: { cidr_block: "10.0.0.0/16" },
+      });
+      const subnet = await subnetHandler.create({
+        resourceType: "aws_subnet",
+        attributes: { vpc_id: vpc.id, cidr_block: "10.0.1.0/24" },
+      });
+
       const result = await handler.create({
         resourceType: "aws_instance",
         attributes: {
           ami: "ami-0c55b159cbfafe1f0",
           instance_type: "t2.micro",
-          vpc_security_group_ids: ["sg-0abc123def456789a", "sg-0def456789abc123b"],
+          subnet_id: subnet.id,
         },
       });
 
-      expect(result.attributes.vpc_security_group_ids).toEqual([
-        "sg-0abc123def456789a",
-        "sg-0def456789abc123b",
-      ]);
+      expect(result.attributes.subnet_id).toBe(subnet.id);
+    });
+
+    test("accepts valid vpc_security_group_ids references", async () => {
+      const vpcHandler = createVpcHandler(store);
+      const sgHandler = createSecurityGroupHandler(store);
+      const vpc = await vpcHandler.create({
+        resourceType: "aws_vpc",
+        attributes: { cidr_block: "10.0.0.0/16" },
+      });
+      const sg1 = await sgHandler.create({
+        resourceType: "aws_security_group",
+        attributes: { name: "sg-1", vpc_id: vpc.id },
+      });
+      const sg2 = await sgHandler.create({
+        resourceType: "aws_security_group",
+        attributes: { name: "sg-2", vpc_id: vpc.id },
+      });
+
+      const result = await handler.create({
+        resourceType: "aws_instance",
+        attributes: {
+          ami: "ami-0c55b159cbfafe1f0",
+          instance_type: "t2.micro",
+          vpc_security_group_ids: [sg1.id, sg2.id],
+        },
+      });
+
+      expect(result.attributes.vpc_security_group_ids).toEqual([sg1.id, sg2.id]);
+    });
+
+    test("allows instance without subnet_id or vpc_security_group_ids", async () => {
+      const result = await handler.create({
+        resourceType: "aws_instance",
+        attributes: {
+          ami: "ami-0c55b159cbfafe1f0",
+          instance_type: "t2.micro",
+        },
+      });
+
+      expect(result.id).toMatch(/^i-/);
     });
   });
 });

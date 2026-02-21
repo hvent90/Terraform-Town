@@ -9,6 +9,7 @@ import {
   generatePrivateDns,
   generatePublicDns,
 } from "../utils/computed";
+import { validateReferenceExists } from "../utils/validation";
 
 const DEFAULT_REGION = "us-east-1";
 
@@ -40,6 +41,26 @@ function buildComputedAttributes(
 export function createInstanceHandler(store: StateStore): ResourceHandler {
   return {
     async create(ctx: ResourceContext): Promise<ResourceResult> {
+      // Validate references
+      const subnetId = ctx.attributes.subnet_id as string | undefined;
+      if (subnetId) {
+        const error = await validateReferenceExists(store, "aws_subnet", subnetId, "subnet_id");
+        if (error) throw new Error(error);
+      }
+
+      const sgIds = ctx.attributes.vpc_security_group_ids as string[] | undefined;
+      if (sgIds && sgIds.length > 0) {
+        for (const sgId of sgIds) {
+          const error = await validateReferenceExists(
+            store,
+            "aws_security_group",
+            sgId,
+            "vpc_security_group_ids",
+          );
+          if (error) throw new Error(error);
+        }
+      }
+
       const instanceId = generateInstanceId();
       const region = DEFAULT_REGION;
       const associatePublicIp = (ctx.attributes.associate_public_ip_address as boolean) ?? false;

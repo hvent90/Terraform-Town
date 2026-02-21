@@ -3,18 +3,20 @@ import { $ } from "bun";
 import { join } from "path";
 import { mkdtemp, rm, readFile } from "fs/promises";
 import { tmpdir } from "os";
-import { startBackend, stopBackend, setupProviderMirror, terraformEnv } from "../../helpers";
+import { startBackend, setupProviderMirror, terraformEnv } from "../../helpers";
 
 const resourceType = "aws_security_group";
 
 describe(`${resourceType} integration`, () => {
   let testDir: string;
   let env: Record<string, string>;
+  let backend: ReturnType<typeof startBackend>;
 
   beforeAll(async () => {
     testDir = await mkdtemp(join(tmpdir(), "tf-test-"));
     const statePath = join(testDir, "state.json");
-    const backendUrl = startBackend(statePath);
+    backend = startBackend(statePath);
+    const backendUrl = backend.url;
 
     await setupProviderMirror(testDir);
     env = terraformEnv(testDir);
@@ -48,7 +50,7 @@ resource "aws_security_group" "test" {
   });
 
   afterAll(async () => {
-    stopBackend();
+    backend.stop();
     await rm(testDir, { recursive: true });
   });
 

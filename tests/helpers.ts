@@ -7,24 +7,21 @@ const PROJECT_ROOT = join(import.meta.dir, "..");
 const PROVIDER_DIR = join(PROJECT_ROOT, "packages/terraform-provider-aws-mock");
 const PROVIDER_BINARY = join(PROVIDER_DIR, "terraform-provider-aws-mock");
 
-let currentServer: Server | null = null;
-let currentBackendUrl = "";
+export interface BackendHandle {
+  url: string;
+  stop: () => void;
+}
 
-export function startBackend(statePath: string): string {
+export function startBackend(statePath: string): BackendHandle {
   const app = createApp(statePath);
-  currentServer = Bun.serve({
+  const server: Server = Bun.serve({
     port: 0,
     fetch: app.fetch,
   });
-  currentBackendUrl = `http://localhost:${currentServer.port}`;
-  return currentBackendUrl;
-}
-
-export function stopBackend(): void {
-  if (currentServer) {
-    currentServer.stop(true);
-    currentServer = null;
-  }
+  return {
+    url: `http://localhost:${server.port}`,
+    stop: () => server.stop(true),
+  };
 }
 
 export async function setupProviderMirror(testDir: string): Promise<void> {

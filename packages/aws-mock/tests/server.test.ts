@@ -223,6 +223,46 @@ describe("mock backend server", () => {
     });
   });
 
+  describe("reference validation", () => {
+    test("returns 400 when creating instance with non-existent subnet_id", async () => {
+      const res = await app.request("/resource/aws_instance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attributes: {
+            ami: "ami-test",
+            instance_type: "t2.micro",
+            subnet_id: "subnet-nonexistent",
+          },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("subnet");
+      expect(body.error).toContain("not found");
+    });
+
+    test("returns 400 when creating instance with non-existent security group", async () => {
+      const res = await app.request("/resource/aws_instance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attributes: {
+            ami: "ami-test",
+            instance_type: "t2.micro",
+            vpc_security_group_ids: ["sg-nonexistent"],
+          },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("security group");
+      expect(body.error).toContain("not found");
+    });
+  });
+
   describe("error handling", () => {
     test("returns 400 for missing attributes on POST", async () => {
       const res = await app.request("/resource/aws_s3_bucket", {

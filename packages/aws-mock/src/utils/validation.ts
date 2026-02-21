@@ -31,6 +31,24 @@ export function validatePolicyJson(json: string): string | null {
   }
 }
 
+/**
+ * Validates that a referenced resource exists in the state store.
+ * Returns null if valid, or an error message string if the resource is not found.
+ */
+export async function validateReferenceExists(
+  store: { readResource(type: string, id: string): Promise<{ id: string } | null> },
+  resourceType: string,
+  resourceId: string,
+  fieldName: string,
+): Promise<string | null> {
+  const existing = await store.readResource(resourceType, resourceId);
+  if (!existing) {
+    const friendlyName = resourceType.replace("aws_", "").replace(/_/g, " ");
+    return `Referenced ${friendlyName} "${resourceId}" not found for ${fieldName}`;
+  }
+  return null;
+}
+
 const VALID_REGIONS = new Set([
   "us-east-1",
   "us-east-2",
