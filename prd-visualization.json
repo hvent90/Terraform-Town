@@ -236,7 +236,7 @@
       "title": "Performance: 1000 resources at 30fps",
       "description": "Scene maintains 30fps with 1000 resources using instancing",
       "priority": 69,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "1000 resources render",
         "FPS >= 30",

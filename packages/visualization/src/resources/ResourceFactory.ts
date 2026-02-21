@@ -2,20 +2,15 @@ import * as THREE from 'three';
 import type { Resource, Theme } from '../types';
 
 export class ResourceFactory {
+  private geometryCache = new Map<string, THREE.BufferGeometry>();
+
   constructor(private theme: Theme) {}
-  
-  create(resource: Resource): THREE.Object3D {
-    const config = this.theme.resources[resource.type] ?? {
-      color: '#ffffff',
-      emissive: '#ffffff',
-      emissiveIntensity: 0.3,
-      opacity: 1,
-    };
-    
-    let geometry: THREE.BufferGeometry;
-    let material: THREE.Material;
-    
-    switch (resource.type) {
+
+  private getGeometry(type: string): THREE.BufferGeometry {
+    let geometry = this.geometryCache.get(type);
+    if (geometry) return geometry;
+
+    switch (type) {
       case 'vpc':
         geometry = new THREE.BoxGeometry(10, 10, 10);
         break;
@@ -32,7 +27,6 @@ export class ResourceFactory {
         geometry = new THREE.CylinderGeometry(1, 1.5, 2, 16);
         break;
       case 'iam_role':
-        // TODO: Custom shield geometry
         geometry = new THREE.BoxGeometry(1.5, 2, 0.3);
         break;
       case 'lambda_function':
@@ -41,6 +35,21 @@ export class ResourceFactory {
       default:
         geometry = new THREE.BoxGeometry(2, 2, 2);
     }
+
+    this.geometryCache.set(type, geometry);
+    return geometry;
+  }
+
+  create(resource: Resource): THREE.Object3D {
+    const config = this.theme.resources[resource.type] ?? {
+      color: '#ffffff',
+      emissive: '#ffffff',
+      emissiveIntensity: 0.3,
+      opacity: 1,
+    };
+
+    const geometry = this.getGeometry(resource.type);
+    let material: THREE.Material;
     
     // Apply state-based opacity
     const stateConfig = this.theme.states[resource.state];

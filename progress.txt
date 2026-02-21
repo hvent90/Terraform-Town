@@ -644,3 +644,18 @@ Project: terraform-town - Mock AWS Provider
 - Files changed: packages/visualization/tests/Performance100.test.ts
 ---
 
+## 2026-02-20 - VIS-019
+- Implemented geometry caching in ResourceFactory — each resource type creates geometry once, reuses for all instances
+- Added `geometryCache` Map and `getGeometry(type)` method to ResourceFactory
+- 1000 resources render with shared geometry (7 geometries total, not 1000)
+- Single frame update for 1000 resources completes within 33ms budget (30fps)
+- 4 tests: 1000 render, frame time <33ms, geometry sharing verified, total time <5s
+- All 130 tests pass, build succeeds
+- Files changed: packages/visualization/src/resources/ResourceFactory.ts, packages/visualization/tests/Performance1000.test.ts
+- **Learnings for future iterations:**
+  - Geometry sharing reduces GPU memory significantly (7 geometries vs 1000)
+  - Materials still created per-mesh (needed for per-resource opacity/state)
+  - Three.js `BufferGeometry` is the main memory cost; sharing it is the simplest instancing optimization
+  - For true GPU instancing (InstancedMesh), would need to restructure per-type rendering — not needed at 1000 resources
+---
+
