@@ -1,0 +1,259 @@
+{
+  "name": "terraform-town-visualization",
+  "branchName": "ralph/visualization",
+  "description": "Three.js 3D visualization component for Terraform Town with TRON-style default theme",
+  "userStories": [
+    {
+      "id": "VIS-001",
+      "title": "Project setup complete",
+      "description": "Three.js + Vite + Vitest configured, dependencies installed",
+      "priority": 100,
+      "passes": true,
+      "acceptanceCriteria": [
+        "bun install succeeds",
+        "packages/visualization/package.json exists",
+        "Vite config exists"
+      ]
+    },
+    {
+      "id": "VIS-002",
+      "title": "Visualization class instantiates",
+      "description": "Visualization class creates Three.js scene, camera, renderer",
+      "priority": 99,
+      "passes": false,
+      "acceptanceCriteria": [
+        "new Visualization(container) succeeds",
+        "Renderer attached to DOM",
+        "Canvas visible in container"
+      ]
+    },
+    {
+      "id": "VIS-003",
+      "title": "TRON theme applies correctly",
+      "description": "Default theme renders with dark background, emissive resources",
+      "priority": 98,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Background color is #0a0a0a",
+        "Resources have emissive materials",
+        "Theme config matches spec"
+      ]
+    },
+    {
+      "id": "VIS-004",
+      "title": "ResourceFactory creates correct meshes",
+      "description": "Factory generates correct geometry for each resource type",
+      "priority": 97,
+      "passes": false,
+      "acceptanceCriteria": [
+        "VPC creates BoxGeometry(10,10,10)",
+        "Instance creates BoxGeometry(2,2,2)",
+        "S3 creates CylinderGeometry",
+        "Lambda creates SphereGeometry",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "VIS-005",
+      "title": "State sync parses Terraform state",
+      "description": "StateSync normalizes terraform.tfstate to visualization format",
+      "priority": 96,
+      "passes": false,
+      "acceptanceCriteria": [
+        "parseState() returns TerraformState",
+        "Resources mapped to correct types",
+        "Connections extracted from attributes",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "VIS-006",
+      "title": "ForceLayout positions resources",
+      "description": "Layout algorithm positions resources without overlap",
+      "priority": 95,
+      "passes": false,
+      "acceptanceCriteria": [
+        "calculate() returns positions for all resources",
+        "No two resources at same position",
+        "Parent-child proximity maintained",
+        "Unit tests pass"
+      ]
+    },
+    {
+      "id": "VIS-007",
+      "title": "OrbitControls work",
+      "description": "Camera responds to mouse drag, scroll, right-click",
+      "priority": 94,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Left-drag orbits camera",
+        "Scroll zooms in/out",
+        "Right-drag pans",
+        "Controls feel smooth"
+      ]
+    },
+    {
+      "id": "VIS-008",
+      "title": "Hover shows tooltip",
+      "description": "Mouse hover displays resource name and type",
+      "priority": 93,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Hover on mesh shows tooltip",
+        "Tooltip contains name and type",
+        "Tooltip follows mouse",
+        "Hover off hides tooltip"
+      ]
+    },
+    {
+      "id": "VIS-009",
+      "title": "Click shows detail panel",
+      "description": "Click on resource opens floating detail panel",
+      "priority": 92,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Click selects resource",
+        "Detail panel appears",
+        "Panel shows all attributes",
+        "Escape closes panel"
+      ]
+    },
+    {
+      "id": "VIS-010",
+      "title": "Double-click focuses camera",
+      "description": "Double-click animates camera to center on resource",
+      "priority": 91,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Double-click triggers camera animation",
+        "Camera moves to resource",
+        "Animation duration ~600ms",
+        "Animation is smooth"
+      ]
+    },
+    {
+      "id": "VIS-011",
+      "title": "Create animation works",
+      "description": "Resources animate in with fade + scale",
+      "priority": 90,
+      "passes": false,
+      "acceptanceCriteria": [
+        "New resources start at scale 0",
+        "Scale animates 0→1 over 300ms",
+        "Opacity animates 0→1",
+        "Animation is interruptible"
+      ]
+    },
+    {
+      "id": "VIS-012",
+      "title": "Destroy animation works",
+      "description": "Resources animate out with fade + scale down",
+      "priority": 89,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Destroyed resources fade out",
+        "Scale animates 1→0",
+        "Duration 300ms",
+        "Mesh removed after animation"
+      ]
+    },
+    {
+      "id": "VIS-013",
+      "title": "Connection lines render",
+      "description": "References between resources shown as lines",
+      "priority": 88,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Lines connect related resources",
+        "Lines are visible but not distracting",
+        "Lines update when resources move"
+      ]
+    },
+    {
+      "id": "VIS-014",
+      "title": "Ground with checkerboard",
+      "description": "Ground plane has subtle checkerboard pattern",
+      "priority": 87,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Ground is visible",
+        "Checkerboard pattern applied",
+        "Colors match theme config"
+      ]
+    },
+    {
+      "id": "VIS-015",
+      "title": "Planned state visual",
+      "description": "Planned resources show at 50% opacity, pulsing",
+      "priority": 86,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Planned resources at 50% opacity",
+        "Pulsing animation active",
+        "Distinguishable from applied resources"
+      ]
+    },
+    {
+      "id": "VIS-016",
+      "title": "Integration: Full EC2 stack renders",
+      "description": "VPC → Subnet → Security Group → Instance renders correctly",
+      "priority": 80,
+      "passes": false,
+      "acceptanceCriteria": [
+        "All 4 resource types render",
+        "Correct colors per type",
+        "Containment visible (subnet in VPC)",
+        "Connections visible",
+        "Interactions work"
+      ]
+    },
+    {
+      "id": "VIS-017",
+      "title": "Integration: Update from terraform apply",
+      "description": "Visualization updates when terraform apply creates resources",
+      "priority": 79,
+      "passes": false,
+      "acceptanceCriteria": [
+        "terraform apply triggers update",
+        "Resources animate in",
+        "State correctly parsed"
+      ]
+    },
+    {
+      "id": "VIS-018",
+      "title": "Performance: 100 resources at 60fps",
+      "description": "Scene maintains 60fps with 100 resources",
+      "priority": 70,
+      "passes": false,
+      "acceptanceCriteria": [
+        "100 resources render",
+        "FPS >= 60",
+        "No jank or stuttering"
+      ]
+    },
+    {
+      "id": "VIS-019",
+      "title": "Performance: 1000 resources at 30fps",
+      "description": "Scene maintains 30fps with 1000 resources using instancing",
+      "priority": 69,
+      "passes": false,
+      "acceptanceCriteria": [
+        "1000 resources render",
+        "FPS >= 30",
+        "Instancing implemented"
+      ]
+    },
+    {
+      "id": "VIS-020",
+      "title": "Test runner passes",
+      "description": "All tests pass, coverage report generated",
+      "priority": 60,
+      "passes": false,
+      "acceptanceCriteria": [
+        "vitest run succeeds",
+        "All tests pass",
+        "No TypeScript errors"
+      ]
+    }
+  ]
+}

@@ -362,3 +362,20 @@ Project: terraform-town - Mock AWS Provider
   - Generated integration test creates full EC2 stack (VPC, Subnet, Security Group, Instance) and verifies reference resolution between resources
 ---
 
+## 2026-02-20 - VIS-001
+- Set up visualization package at `packages/visualization/` with Three.js + Vite + Vitest
+- Created `ralph/visualization` branch from `ralph/ec2-stack`
+- Package.json with three, d3-force, vite, vitest, jsdom dependencies
+- Vite config at root with `root: 'packages/visualization'`, jsdom test environment
+- Created `index.html` entry point for Vite dev server and build
+- Fixed SelectionManager to use custom event emitter instead of Node.js `EventEmitter` (not browser-compatible)
+- Added `dist/` and `*.log` to .gitignore
+- Existing scaffold: Visualization class, ResourceFactory, Animator, ForceLayout, StateSync, SelectionManager, Theme types
+- Files: packages/visualization/*, vite.config.ts, .gitignore, prd-visualization.json
+- **Learnings for future iterations:**
+  - Vite needs `index.html` in root dir to build — without it, `vite build` fails with "Could not resolve entry module"
+  - Node.js `EventEmitter` from 'events' module is externalized by Vite for browser builds — use custom emitter instead
+  - `bun run --filter "@terraform-town/visualization" build` runs package-scoped scripts from workspace root
+  - Visualization tests use jsdom environment via vitest (configured in vite.config.ts `test.environment: 'jsdom'`)
+---
+

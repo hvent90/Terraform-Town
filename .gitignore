@@ -4,3 +4,5 @@ node_modules/
 *.tfstate.backup
 .terraform.lock.hcl
 packages/terraform-provider-aws-mock/terraform-provider-aws-mock
+dist/
+*.log
