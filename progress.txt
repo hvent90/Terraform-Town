@@ -379,3 +379,22 @@ Project: terraform-town - Mock AWS Provider
   - Visualization tests use jsdom environment via vitest (configured in vite.config.ts `test.environment: 'jsdom'`)
 ---
 
+## 2026-02-20 - VIS-002
+- Created Visualization instantiation tests at `packages/visualization/tests/Visualization.test.ts`
+- Created WebGL2 context stub at `packages/visualization/tests/setup.ts` for jsdom test environment
+- Moved `vite.config.ts` from project root to `packages/visualization/vite.config.ts` (fixes "Cannot find module 'vite'" error)
+- Added `setupFiles` to vitest config to load WebGL stub before tests
+- Tests: constructor succeeds, canvas attached to DOM, canvas has dimensions
+- Existing Visualization class implementation already satisfied all acceptance criteria
+- Files changed: packages/visualization/tests/Visualization.test.ts, packages/visualization/tests/setup.ts, packages/visualization/vite.config.ts, vite.config.ts (removed), prd-visualization.json
+- **Learnings for future iterations:**
+  - jsdom doesn't support WebGL — need a WebGL context stub for Three.js tests
+  - Proxy-based stub handles all WebGL2 methods automatically (no need to list every method)
+  - Three.js accesses WebGL constants as properties on the gl context (e.g. `gl.VERSION`) — must be on the stub object
+  - `gl.getParameter(gl.VERSION)` must return a string containing "WebGL" for Three.js to parse version
+  - vitest.config.ts setupFiles runs before each test file — good for environment setup
+  - Visualization.test.ts uses `describe.skipIf(!hasDOM)` to skip gracefully under bun test (no jsdom)
+  - `bun run --filter "@terraform-town/visualization" test` runs vitest with jsdom correctly
+  - vite.config.ts must be in the package where `vite` is installed, not at workspace root
+---
+

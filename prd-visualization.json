@@ -20,7 +20,7 @@
       "title": "Visualization class instantiates",
       "description": "Visualization class creates Three.js scene, camera, renderer",
       "priority": 99,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "new Visualization(container) succeeds",
         "Renderer attached to DOM",
