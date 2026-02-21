@@ -97,7 +97,7 @@
       "title": "Hover shows tooltip",
       "description": "Mouse hover displays resource name and type",
       "priority": 93,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Hover on mesh shows tooltip",
         "Tooltip contains name and type",

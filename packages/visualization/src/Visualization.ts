@@ -81,6 +81,8 @@ export class Visualization {
     window.addEventListener('resize', () => this.onResize());
     
     // Setup interactions
+    this.selection.attach(this.renderer.domElement);
+    this.container.appendChild(this.selection.getTooltipElement());
     this.selection.on('select', (id: string) => this.onSelect(id));
     this.selection.on('hover', (id: string | null) => this.onHover(id));
   }
