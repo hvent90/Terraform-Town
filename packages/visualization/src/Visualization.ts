@@ -64,6 +64,9 @@ export class Visualization {
     // Setup controls
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
+    this.controls.minDistance = 10;
+    this.controls.maxDistance = 500;
+    this.controls.maxPolarAngle = Math.PI / 2;
     
     // Setup lighting
     this.setupLighting();

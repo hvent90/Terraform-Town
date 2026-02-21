@@ -71,7 +71,7 @@
       "title": "ForceLayout positions resources",
       "description": "Layout algorithm positions resources without overlap",
       "priority": 95,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "calculate() returns positions for all resources",
         "No two resources at same position",
@@ -84,7 +84,7 @@
       "title": "OrbitControls work",
       "description": "Camera responds to mouse drag, scroll, right-click",
       "priority": 94,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Left-drag orbits camera",
         "Scroll zooms in/out",

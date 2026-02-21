@@ -440,3 +440,36 @@ Project: terraform-town - Mock AWS Provider
   - REFERENCE_ATTRS and PARENT_ATTRS as module-level constants keep the mapping extensible
 ---
 
+## 2026-02-20 - VIS-006
+- Replaced stub grid layout with d3-force-directed layout in `packages/visualization/src/layout/ForceLayout.ts`
+- Updated `calculate()` signature to accept optional `connections` parameter for link forces
+- Builds links from both explicit connections and parent-child (parentId) relationships
+- Uses d3-force simulation: charge repulsion (-200), collision (radius 8), center, link attraction (distance 20, strength 1)
+- Maps d3's 2D (x,y) to 3D (x, 0, z) — all resources on y=0 plane
+- Added 8 tests: positions all resources, coordinate types, no overlap, parent-child proximity, empty list, single resource, without connections, 20-resource stress test
+- All 42 tests pass, build succeeds
+- Files changed: packages/visualization/src/layout/ForceLayout.ts, packages/visualization/tests/ForceLayout.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - d3-force works in 2D — map (x,y) → (x, 0, z) for Three.js 3D scene
+  - `forceSimulation().stop()` + manual `tick()` loop runs synchronously (no animation frame needed)
+  - 300 iterations is sufficient for convergence with typical resource counts
+  - `forceCollide(8)` prevents overlapping; `forceManyBody().strength(-200)` spreads nodes
+  - `forceLink().distance(20).strength(1)` pulls connected/parent-child nodes closer
+  - Dedup links with sorted key set to avoid duplicate forces between same pair
+  - Parent-child proximity test: child (linked) should be closer to parent than unrelated (unlinked) node
+---
+
+## 2026-02-20 - VIS-007
+- Added OrbitControls configuration tests at `packages/visualization/tests/OrbitControls.test.ts` (10 tests)
+- Configured zoom limits (minDistance: 10, maxDistance: 500) and polar angle limit (maxPolarAngle: PI/2)
+- OrbitControls already had rotate, zoom, pan, and damping enabled from VIS-002 scaffolding
+- All 52 tests pass, build succeeds
+- Files changed: packages/visualization/src/Visualization.ts, packages/visualization/tests/OrbitControls.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - OrbitControls defaults already enable rotate, zoom, and pan — only needed to add limits
+  - `minDistance`/`maxDistance` prevent zooming too close or too far (default 0/Infinity)
+  - `maxPolarAngle = Math.PI / 2` prevents camera from orbiting below the ground plane
+  - OrbitControls private fields testable via `(vis as any).controls` in vitest
+  - `enableDamping = true` + `dampingFactor = 0.05` already configured for smooth feel
+---
+
