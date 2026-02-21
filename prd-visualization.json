@@ -44,7 +44,7 @@
       "title": "ResourceFactory creates correct meshes",
       "description": "Factory generates correct geometry for each resource type",
       "priority": 97,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "VPC creates BoxGeometry(10,10,10)",
         "Instance creates BoxGeometry(2,2,2)",
@@ -58,7 +58,7 @@
       "title": "State sync parses Terraform state",
       "description": "StateSync normalizes terraform.tfstate to visualization format",
       "priority": 96,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "parseState() returns TerraformState",
         "Resources mapped to correct types",

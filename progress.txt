@@ -411,3 +411,32 @@ Project: terraform-town - Mock AWS Provider
   - Existing scaffolded implementation already satisfied VIS-003 acceptance criteria — tests confirmed correctness
 ---
 
+## 2026-02-20 - VIS-004
+- Added geometry-specific tests to `packages/visualization/tests/ResourceFactory.test.ts` (12 tests total)
+- Tests verify: VPC BoxGeometry(10,10,10), Instance BoxGeometry(2,2,2), Subnet BoxGeometry(4,4,4), S3 CylinderGeometry, Lambda SphereGeometry, Security Group SphereGeometry+wireframe, IAM Role BoxGeometry, unknown type fallback, userData storage
+- Added fallback config in ResourceFactory for unknown resource types (prevents crash on unrecognized types)
+- Refactored tests to use `makeResource()` helper to reduce boilerplate
+- Files changed: packages/visualization/src/resources/ResourceFactory.ts, packages/visualization/tests/ResourceFactory.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - Three.js geometry parameters are accessible via `(geometry as BoxGeometry).parameters` — has width, height, depth for Box; radius for Sphere; radiusTop, radiusBottom, height for Cylinder
+  - `this.theme.resources[type]` returns undefined for unknown types — need nullish coalescing fallback
+  - Existing scaffolded ResourceFactory implementation was already correct for all 7 resource types
+---
+
+## 2026-02-20 - VIS-005
+- Implemented StateSync `parseState()` with connection extraction and parent finding
+- Replaced stub `findParent()` and `normalizeConnections()` with working implementations
+- Built ID→address lookup map from raw terraform state resources
+- Removed unused `import * as THREE from 'three'` from StateSync.ts
+- Added 7 new tests (10 total): connections from vpc_id, subnet_id, vpc_security_group_ids; parentId extraction; full EC2 stack; graceful handling of missing references
+- All 36 tests pass, build succeeds
+- Files changed: packages/visualization/src/state/StateSync.ts, packages/visualization/tests/StateSync.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - Terraform state `resources[].instances[0].attributes.id` contains the cloud resource ID (e.g., `vpc-abc123`)
+  - Connection extraction needs an ID→address lookup: map cloud resource IDs back to terraform addresses (e.g., `vpc-abc123` → `aws_vpc.main`)
+  - Parent relationship attributes: `vpc_id` → parent is the VPC, `subnet_id` → parent is the subnet
+  - `vpc_security_group_ids` is an array — need to handle both scalar and array reference attributes
+  - References to non-existent resources (not in state) should be silently ignored, not error
+  - REFERENCE_ATTRS and PARENT_ATTRS as module-level constants keep the mapping extensible
+---
+
