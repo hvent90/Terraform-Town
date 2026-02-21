@@ -473,3 +473,41 @@ Project: terraform-town - Mock AWS Provider
   - `enableDamping = true` + `dampingFactor = 0.05` already configured for smooth feel
 ---
 
+## 2026-02-20 - VIS-008
+- Implemented hover tooltip with raycasting in `SelectionManager` and tooltip DOM element
+- Added `attach(domElement)` method to bind mousemove events to canvas
+- Added `getTooltipElement()` returning a styled fixed-position div (TRON theme: monospace, cyan text, dark bg)
+- Added `dispose()` for cleanup of event listeners and tooltip DOM
+- Raycasting: `setFromCamera()` + `intersectObjects(scene.children, true)` finds first mesh with `userData.id`
+- Tooltip shows `{name} ({type})` at mouse position + 12px offset
+- Hover event emitted only on change (prevents duplicate events)
+- Wired `selection.attach(renderer.domElement)` and tooltip into Visualization.init()
+- Added 9 tests: event binding, raycast hit/miss, hover events, tooltip display/hide/follow/content
+- All 61 tests pass, build succeeds
+- Files changed: packages/visualization/src/interactions/Selection.ts, packages/visualization/src/Visualization.ts, packages/visualization/tests/HoverTooltip.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - Three.js raycasting is CPU-based — works in jsdom test environment without WebGL
+  - Camera matrices must be updated (`camera.updateMatrixWorld(true)`) before raycasting in tests (normally done by renderer.render())
+  - `getBoundingClientRect()` must be mocked in tests for mouse coordinate normalization
+  - Tooltip as HTML overlay (fixed position div) is simpler than canvas-rendered text
+  - Only emit hover events when hovered ID changes to avoid redundant callbacks
+  - `boundMouseMove` stored as class field for clean addEventListener/removeEventListener pairing
+---
+
+## 2026-02-20 - VIS-009
+- Implemented click-to-select with detail panel in SelectionManager
+- Added `onClick` handler with raycasting (reused `raycastHit` helper extracted from `onMouseMove`)
+- Added `getDetailPanel()` returning a TRON-themed fixed-position panel (top-right, 320px width)
+- Added `renderDetailPanel()` with recursive attribute rendering for nested objects
+- Added `onKeyDown` handler: Escape key closes panel and emits `select null`
+- Wired detail panel into Visualization.init() alongside tooltip
+- Added 13 tests: click select, deselect, event binding, panel visibility, attribute display, nested attrs, Escape close, dispose cleanup
+- All 74 tests pass, build succeeds
+- Files changed: packages/visualization/src/interactions/Selection.ts, packages/visualization/src/Visualization.ts, packages/visualization/tests/ClickDetailPanel.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - Extracted `raycastHit()` helper to share raycasting logic between mousemove and click handlers
+  - Detail panel uses `innerHTML` for attribute rendering — recursive `renderAttributes()` handles nested objects with indentation
+  - Escape key listener must be on `document` (not canvas) to work regardless of focus
+  - `boundClick` and `boundKeyDown` follow same pattern as `boundMouseMove` for clean cleanup in `dispose()`
+---
+

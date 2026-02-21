@@ -110,7 +110,7 @@
       "title": "Click shows detail panel",
       "description": "Click on resource opens floating detail panel",
       "priority": 92,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Click selects resource",
         "Detail panel appears",

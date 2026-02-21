@@ -83,6 +83,7 @@ export class Visualization {
     // Setup interactions
     this.selection.attach(this.renderer.domElement);
     this.container.appendChild(this.selection.getTooltipElement());
+    this.container.appendChild(this.selection.getDetailPanel());
     this.selection.on('select', (id: string) => this.onSelect(id));
     this.selection.on('hover', (id: string | null) => this.onHover(id));
   }
