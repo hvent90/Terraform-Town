@@ -5,7 +5,12 @@ export class ResourceFactory {
   constructor(private theme: Theme) {}
   
   create(resource: Resource): THREE.Object3D {
-    const config = this.theme.resources[resource.type];
+    const config = this.theme.resources[resource.type] ?? {
+      color: '#ffffff',
+      emissive: '#ffffff',
+      emissiveIntensity: 0.3,
+      opacity: 1,
+    };
     
     let geometry: THREE.BufferGeometry;
     let material: THREE.Material;
