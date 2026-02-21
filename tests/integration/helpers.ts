@@ -1,6 +1,8 @@
 import { mkdtemp, rm, cp, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Server } from "bun";
+import { createApp } from "../../packages/aws-mock/src/index";
 
 const PROJECT_ROOT = join(import.meta.dir, "../..");
 const PROVIDER_DIR = join(PROJECT_ROOT, "packages/terraform-provider-aws-mock");
@@ -9,6 +11,23 @@ const PROVIDER_BINARY = join(PROVIDER_DIR, "terraform-provider-aws-mock");
 export interface TerraformEnv {
   workDir: string;
   cleanup: () => Promise<void>;
+}
+
+export interface BackendServer {
+  url: string;
+  stop: () => void;
+}
+
+export function startBackend(statePath: string): BackendServer {
+  const app = createApp(statePath);
+  const server: Server = Bun.serve({
+    port: 0,
+    fetch: app.fetch,
+  });
+  return {
+    url: `http://localhost:${server.port}`,
+    stop: () => server.stop(true),
+  };
 }
 
 export async function buildProvider(): Promise<void> {
