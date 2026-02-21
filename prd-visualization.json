@@ -224,7 +224,7 @@
       "title": "Performance: 100 resources at 60fps",
       "description": "Scene maintains 60fps with 100 resources",
       "priority": 70,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "100 resources render",
         "FPS >= 60",
