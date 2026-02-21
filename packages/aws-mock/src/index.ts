@@ -3,6 +3,7 @@ import { StateStore } from "./state/store";
 import { createS3BucketHandler } from "./resources/s3-bucket";
 import { createS3BucketPolicyHandler } from "./resources/s3-bucket-policy";
 import { createVpcHandler } from "./resources/vpc";
+import { createSubnetHandler } from "./resources/subnet";
 import type { ResourceHandler } from "./resources/types";
 
 export function createApp(statePath: string) {
@@ -13,6 +14,7 @@ export function createApp(statePath: string) {
     aws_s3_bucket: createS3BucketHandler(store),
     aws_s3_bucket_policy: createS3BucketPolicyHandler(store),
     aws_vpc: createVpcHandler(store),
+    aws_subnet: createSubnetHandler(store),
   };
 
   // Create

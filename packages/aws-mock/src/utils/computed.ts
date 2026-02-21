@@ -55,3 +55,15 @@ export function generateDhcpOptionsId(): string {
 export function generateIpv6AssociationId(): string {
   return `vpc-cidr-assoc-${randomHex(17)}`;
 }
+
+export function generateSubnetId(): string {
+  return `subnet-${randomHex(17)}`;
+}
+
+export function generateSubnetArn(subnetId: string, region: string): string {
+  return `arn:aws:ec2:${region}:${MOCK_ACCOUNT_ID}:subnet/${subnetId}`;
+}
+
+export function generateSubnetIpv6AssociationId(): string {
+  return `subnet-cidr-assoc-${randomHex(17)}`;
+}

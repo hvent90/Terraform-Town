@@ -8,7 +8,7 @@
       "title": "aws_vpc resource handler",
       "description": "Implement Create/Read/Update/Delete for aws_vpc",
       "priority": 69,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create accepts cidr_block, generates computed values (id, arn, default_network_acl_id, etc.)",
         "Read returns stored VPC attributes",
@@ -22,7 +22,7 @@
       "title": "aws_subnet resource handler",
       "description": "Implement aws_subnet with VPC reference support",
       "priority": 68,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Create accepts cidr_block, vpc_id, availability_zone",
         "vpc_id can reference aws_vpc.test.id",

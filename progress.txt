@@ -296,3 +296,35 @@ Project: terraform-town - Mock AWS Provider
   - Script is self-referencing: US-020 checks that `scripts/run-tests.sh` is executable
 ---
 
+## 2026-02-20 - US-021
+- Implemented aws_vpc resource handler with full CRUD in TypeScript backend
+- Added VPC computed value generators (vpc ID, ARN, network ACL ID, route table ID, security group ID, DHCP options ID, IPv6 association ID)
+- Created Go provider schema and CRUD wiring for aws_vpc
+- Updated tests/helpers.ts with proper API for generated tests (startBackend/stopBackend/setupProviderMirror/terraformEnv)
+- Updated generated VPC test to work with proper terraform provider setup
+- Skipped generated tests for unimplemented resources (aws_subnet, aws_security_group, aws_instance) with describe.skip
+- Files changed: packages/aws-mock/src/resources/vpc.ts, packages/aws-mock/src/utils/computed.ts, packages/aws-mock/src/index.ts, packages/aws-mock/tests/vpc.test.ts, packages/terraform-provider-aws-mock/schema_vpc.go, packages/terraform-provider-aws-mock/resource_vpc.go, packages/terraform-provider-aws-mock/main.go, tests/helpers.ts, tests/generated/aws_vpc/aws_vpc.test.ts
+- **Learnings for future iterations:**
+  - Generated tests need provider mirror setup, .terraformrc, required_providers block, and TF_CLI_CONFIG_FILE env var — tests/helpers.ts provides setupProviderMirror() and terraformEnv() for this
+  - VPC computed values use random hex IDs (vpc-xxx, acl-xxx, rtb-xxx, sg-xxx, dopt-xxx, vpc-cidr-assoc-xxx)
+  - randomHex() helper in computed.ts uses crypto.getRandomValues for generating resource IDs
+  - Each EC2 resource needs full stack: TS handler + Go schema + Go CRUD + backend registration
+  - Bun shell `$` supports `.env({...})` for setting environment variables per command
+  - Generated test suites for unimplemented resources should use describe.skip until implemented
+  - Adding new resource to Go provider pattern: schema_<resource>.go, resource_<resource>.go, register in main.go ResourcesMap
+---
+
+## 2026-02-20 - US-022
+- Implemented aws_subnet resource handler with full CRUD in TypeScript backend
+- Added subnet computed value generators (subnet ID, ARN, ipv6_cidr_block_association_id, owner_id)
+- Created Go provider schema and CRUD wiring for aws_subnet
+- Registered handler in backend (index.ts) and Go provider (main.go)
+- Updated generated test to use proper provider mirror setup and VPC reference
+- Files changed: packages/aws-mock/src/resources/subnet.ts, packages/aws-mock/src/utils/computed.ts, packages/aws-mock/src/index.ts, packages/aws-mock/tests/subnet.test.ts, packages/terraform-provider-aws-mock/schema_subnet.go, packages/terraform-provider-aws-mock/resource_subnet.go, packages/terraform-provider-aws-mock/main.go, tests/generated/aws_subnet/aws_subnet.test.ts
+- **Learnings for future iterations:**
+  - aws_subnet requires vpc_id (only required attribute), all others are optional
+  - Generated tests with VPC references need both aws_vpc and aws_subnet in the TF config — test expects 2 resources in state
+  - Subnet computed values: subnet-xxx ID, arn, subnet-cidr-assoc-xxx for ipv6_cidr_block_association_id, owner_id
+  - Same full stack pattern as VPC: TS handler + Go schema + Go CRUD + backend registration + generated test update
+---
+
