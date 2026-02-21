@@ -102,6 +102,12 @@ export class Animator {
     }
   }
 
+  private getActualMesh(obj: THREE.Object3D): THREE.Mesh | undefined {
+    if (obj instanceof THREE.Mesh) return obj;
+    if (obj instanceof THREE.Group && obj.userData.mesh instanceof THREE.Mesh) return obj.userData.mesh;
+    return undefined;
+  }
+
   private applyAnimation(
     mesh: THREE.Object3D,
     type: Animation['type'],
@@ -111,22 +117,25 @@ export class Animator {
     if (type === 'create') {
       const targetOpacity = mesh.userData.targetOpacity ?? 1;
       mesh.scale.setScalar(progress);
-      if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
-        mesh.material.opacity = progress * targetOpacity;
-        mesh.material.transparent = true;
+      const actualMesh = this.getActualMesh(mesh);
+      if (actualMesh && actualMesh.material instanceof THREE.Material) {
+        actualMesh.material.opacity = progress * targetOpacity;
+        actualMesh.material.transparent = true;
       }
     } else if (type === 'destroy') {
       mesh.scale.setScalar(1 - progress);
-      if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
-        mesh.material.opacity = 1 - progress;
-        mesh.material.transparent = true;
+      const actualMesh = this.getActualMesh(mesh);
+      if (actualMesh && actualMesh.material instanceof THREE.Material) {
+        actualMesh.material.opacity = 1 - progress;
+        actualMesh.material.transparent = true;
       }
     } else if (type === 'pulse') {
-      if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
+      const actualMesh = this.getActualMesh(mesh);
+      if (actualMesh && actualMesh.material instanceof THREE.Material) {
         const targetOpacity = mesh.userData.targetOpacity ?? 1;
         const pulse = Math.sin(elapsed * Math.PI * 2 / 1000) * 0.15;
-        mesh.material.opacity = Math.max(0.1, targetOpacity + pulse);
-        mesh.material.transparent = true;
+        actualMesh.material.opacity = Math.max(0.1, targetOpacity + pulse);
+        actualMesh.material.transparent = true;
       }
     }
   }
@@ -140,9 +149,10 @@ export class Animator {
 
     if (animation.type === 'create') {
       mesh.scale.setScalar(0);
-      if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.Material) {
-        mesh.material.opacity = 0;
-        mesh.material.transparent = true;
+      const actualMesh = this.getActualMesh(mesh);
+      if (actualMesh && actualMesh.material instanceof THREE.Material) {
+        actualMesh.material.opacity = 0;
+        actualMesh.material.transparent = true;
       }
     }
   }

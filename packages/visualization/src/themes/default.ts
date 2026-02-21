@@ -28,32 +28,32 @@ export const defaultTheme: Theme = {
     vpc: {
       color: '#00FFFF',
       emissive: '#00FFFF',
-      emissiveIntensity: 0.3,
+      emissiveIntensity: 0.5,
       opacity: 0.2,
     },
     subnet: {
-      color: '#4169E1',
-      emissive: '#4169E1',
-      emissiveIntensity: 0.4,
+      color: '#0066FF',      // Neon blue (was #4169E1)
+      emissive: '#0066FF',
+      emissiveIntensity: 0.5,
       opacity: 0.85,
     },
     security_group: {
       color: '#FF8C00',
       emissive: '#FF8C00',
-      emissiveIntensity: 0.2,
+      emissiveIntensity: 0.4,
       opacity: 0.5,
       wireframe: true,
     },
     instance: {
-      color: '#00FF00',
-      emissive: '#00FF00',
-      emissiveIntensity: 0.5,
+      color: '#39FF14',      // Neon green (was #00FF00)
+      emissive: '#39FF14',
+      emissiveIntensity: 0.6,
       opacity: 0.9,
     },
     s3_bucket: {
-      color: '#9B59B6',
-      emissive: '#9B59B6',
-      emissiveIntensity: 0.4,
+      color: '#B026FF',      // Neon purple (was #9B59B6)
+      emissive: '#B026FF',
+      emissiveIntensity: 0.5,
       opacity: 0.9,
     },
     iam_role: {

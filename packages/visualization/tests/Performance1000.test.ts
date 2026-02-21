@@ -60,7 +60,7 @@ describe.skipIf(!hasDOM)('VIS-019: Performance - 1000 resources at 30fps', () =>
     vis.update(state);
 
     const meshes = getScene().children.filter(
-      (c) => c instanceof THREE.Mesh && c.userData.id,
+      (c) => c instanceof THREE.Group && c.userData.id,
     );
     expect(meshes.length).toBe(1000);
   });
@@ -88,7 +88,7 @@ describe.skipIf(!hasDOM)('VIS-019: Performance - 1000 resources at 30fps', () =>
 
     // All meshes of the same type should share geometries
     const meshes = getScene().children.filter(
-      (c) => c instanceof THREE.Mesh && c.userData.id,
+      (c) => c instanceof THREE.Group && c.userData.id,
     ) as THREE.Mesh[];
 
     // Collect geometries by resource type

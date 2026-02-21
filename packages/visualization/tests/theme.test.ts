@@ -31,10 +31,10 @@ describe('VIS-003: TRON theme matches spec', () => {
   test('resource colors match spec table', () => {
     const spec: Record<string, string> = {
       vpc: '#00FFFF',          // Cyan
-      subnet: '#4169E1',       // Blue
+      subnet: '#0066FF',       // Blue
       security_group: '#FF8C00', // Orange
-      instance: '#00FF00',     // Green
-      s3_bucket: '#9B59B6',    // Purple
+      instance: '#39FF14',     // Green
+      s3_bucket: '#B026FF',    // Purple
       iam_role: '#FFD700',     // Gold
       lambda_function: '#FF00FF', // Magenta
     };

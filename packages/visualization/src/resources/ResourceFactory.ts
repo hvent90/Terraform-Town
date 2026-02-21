@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Resource, Theme } from '../types';
+import { createFakeLight } from './FakeLight';
 
 export class ResourceFactory {
   private geometryCache = new Map<string, THREE.BufferGeometry>();
@@ -57,18 +58,58 @@ export class ResourceFactory {
       ? Math.min(config.opacity, stateConfig.opacity)
       : config.opacity;
 
+    // Using unlit / highly emissive material to pop without Bloom
     material = new THREE.MeshStandardMaterial({
       color: config.color,
       emissive: config.emissive,
-      emissiveIntensity: config.emissiveIntensity,
+      emissiveIntensity: config.emissiveIntensity * 2.0, // Boost since bloom is gone
       transparent: targetOpacity < 1,
       opacity: targetOpacity,
       ...(config.wireframe !== undefined && { wireframe: config.wireframe }),
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.userData = { id: resource.id, type: resource.type, resource, targetOpacity };
     
-    return mesh;
+    // Create a group to hold mesh + fake light plane
+    const group = new THREE.Group();
+    group.add(mesh);
+    
+    // Determine fake light size
+    let lightRange: number;
+    switch (resource.type) {
+      case 'vpc': lightRange = 24; break;
+      case 'subnet': lightRange = 10; break;
+      case 'security_group': lightRange = 12; break;
+      case 'instance': lightRange = 6; break;
+      case 's3_bucket': lightRange = 6; break;
+      case 'iam_role': lightRange = 6; break;
+      case 'lambda_function': lightRange = 6; break;
+      default: lightRange = 6;
+    }
+    
+    // Create the Fake Light plane and place it just slightly above ground (-1)
+    // Assuming resources are near Y=0, we place it near ground to ensure it paints the floor
+    const light = createFakeLight(config.emissive, lightRange);
+    
+    // We position the light so it paints the ground directly beneath the object.
+    // Assuming the ground plane is at Y = -1
+    // We place it at Y = -0.99 to avoid z-fighting with the ground plane
+    light.position.set(0, -0.99, 0);
+    
+    // Ensure the light doesn't inherit parent scale/rotation since it should just be flat on the ground
+    // We will update its absolute world position in the animate loop if needed, but relative to group is fine if group rotation stays 0
+    group.add(light);
+    
+    // Store metadata on the group for raycasting
+    group.userData = { 
+      id: resource.id, 
+      type: resource.type, 
+      resource, 
+      targetOpacity,
+      mesh, // Reference to mesh for animations
+      light, // Reference to light for animations
+    };
+    
+    return group;
   }
 }

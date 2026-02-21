@@ -14,7 +14,7 @@ export class Visualization {
   
   // Three.js core
   private scene: THREE.Scene;
-  private camera: THREE.PerspectiveCamera;
+  private camera: THREE.OrthographicCamera;
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
   
@@ -29,6 +29,7 @@ export class Visualization {
   private resources: Map<string, THREE.Object3D> = new Map();
   private connections: Map<string, THREE.Line> = new Map();
   private animationId: number | null = null;
+  private groundMesh!: THREE.Mesh;
   
   constructor(container: HTMLElement, theme: Theme = defaultTheme) {
     this.container = container;
@@ -36,7 +37,19 @@ export class Visualization {
     
     // Initialize Three.js
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    
+    // Orthographic camera for fixed perspective (top-down view)
+    const aspect = container.clientWidth / container.clientHeight;
+    const frustumSize = 100; // Visible height in world units
+    this.camera = new THREE.OrthographicCamera(
+      frustumSize * aspect / -2,  // left
+      frustumSize * aspect / 2,   // right
+      frustumSize / 2,            // top
+      frustumSize / -2,           // bottom
+      0.1,                        // near
+      1000                        // far
+    );
+    
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     
@@ -50,23 +63,39 @@ export class Visualization {
     this.init();
   }
   
-  private init(): void {
-    // Setup renderer
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setClearColor(this.theme.background, 1);
-    this.container.appendChild(this.renderer.domElement);
-    
-    // Setup camera
-    this.camera.position.set(0, 50, 100);
+    private init(): void {
+      // Setup renderer
+      this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.renderer.setClearColor(this.theme.background, 1);
+      this.container.appendChild(this.renderer.domElement);
+  
+      // Setup fog for depth
+      if (this.theme.fog) {
+        this.scene.fog = new THREE.Fog(this.theme.fog.color, this.theme.fog.near, this.theme.fog.far);
+      }
+  
+      // Setup camera - fixed orthographic isometric view (Diablo 2 style)    // Angled view: high up and to the side, looking at center
+    this.camera.position.set(50, 80, 50);  // Angled from top-right
     this.camera.lookAt(0, 0, 0);
     
-    // Setup controls
+    // Setup controls - pan and zoom only (no rotation for fixed perspective)
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
-    this.controls.minDistance = 10;
-    this.controls.maxDistance = 500;
-    this.controls.maxPolarAngle = Math.PI / 2;
+    this.controls.enableRotate = false;  // Disable rotation for fixed top-down view
+    this.controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,     // Left click drag = pan
+      MIDDLE: THREE.MOUSE.DOLLY, // Middle click = zoom
+      RIGHT: THREE.MOUSE.PAN,    // Right click drag = pan
+    };
+    this.controls.minZoom = 0.5;
+    this.controls.maxZoom = 3;
+    
+    // Touch controls
+    this.controls.touches = {
+      ONE: THREE.TOUCH.PAN,      // One finger = pan
+      TWO: THREE.TOUCH.DOLLY_PAN, // Two fingers = pinch zoom + pan
+    };
     
     // Setup lighting
     this.setupLighting();
@@ -92,16 +121,13 @@ export class Visualization {
   }
   
   private setupLighting(): void {
-    const ambient = new THREE.AmbientLight(
-      this.theme.ambientLight.color,
-      this.theme.ambientLight.intensity
-    );
-    this.scene.add(ambient);
+    // No ambient light - everything is lit only by primitive emissive lights
+    // Primitives themselves emit light (point lights added in ResourceFactory)
   }
   
   private setupGround(): void {
     const checker = this.theme.ground.checkerboard;
-    let material: THREE.MeshBasicMaterial;
+    let material: THREE.MeshStandardMaterial;
 
     if (checker) {
       const canvas = document.createElement('canvas');
@@ -123,18 +149,30 @@ export class Visualization {
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(10, 10);
+      // The canvas is (tileSize * 2) units wide in world space.
+      const worldTextureSize = tileSize * tiles;
+      texture.repeat.set(1000 / worldTextureSize, 1000 / worldTextureSize);
 
-      material = new THREE.MeshBasicMaterial({ map: texture });
+      // Dark glass/metallic TRON grid feel
+      material = new THREE.MeshStandardMaterial({ 
+        map: texture,
+        roughness: 0.15,   // High gloss (reflects point lights)
+        metalness: 0.8,    // Dark metallic TRON grid feel
+      });
     } else {
-      material = new THREE.MeshBasicMaterial({ color: this.theme.ground.color });
+      material = new THREE.MeshStandardMaterial({ 
+        color: this.theme.ground.color,
+        roughness: 0.15,
+        metalness: 0.8,
+      });
     }
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), material);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -1;
-    ground.userData = { isGround: true };
-    this.scene.add(ground);
+    // Initialize with a large default size, we will resize it dynamically based on resources
+    this.groundMesh = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), material);
+    this.groundMesh.rotation.x = -Math.PI / 2;
+    this.groundMesh.position.y = -1;
+    this.groundMesh.userData = { isGround: true };
+    this.scene.add(this.groundMesh);
   }
   
   private animate = (): void => {
@@ -148,7 +186,13 @@ export class Visualization {
   private onResize(): void {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
-    this.camera.aspect = width / height;
+    const aspect = width / height;
+    const frustumSize = 100;
+    
+    this.camera.left = frustumSize * aspect / -2;
+    this.camera.right = frustumSize * aspect / 2;
+    this.camera.top = frustumSize / 2;
+    this.camera.bottom = frustumSize / -2;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
   }
@@ -178,16 +222,79 @@ export class Visualization {
     for (const conn of state.connections) {
       this.upsertConnection(conn);
     }
-  }
-  
-  private upsertResource(resource: Resource, position?: { x: number; y: number; z: number }): void {
-    let mesh = this.resources.get(resource.id);
     
-    if (!mesh) {
+        // Ensure ground plane covers all resources
+        this.updateGroundBounds(positions);
+      }
+    
+      private updateGroundBounds(positions?: Map<string, { x: number; y: number; z: number }>): void {
+        if (this.resources.size === 0) return;
+    
+        let minX = Infinity, maxX = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
+    
+        for (const [id, group] of this.resources.entries()) {
+          const pos = positions?.get(id) || group.position;
+          if (pos.x < minX) minX = pos.x;
+          if (pos.x > maxX) maxX = pos.x;
+          if (pos.z < minZ) minZ = pos.z;
+          if (pos.z > maxZ) maxZ = pos.z;
+        }
+    // Add a generous margin so fake lights don't bleed off the edge
+    // Use a proportional margin for large graphs (e.g. 25% of the size) or a minimum of 200
+    const marginX = Math.max(200, (maxX - minX) * 0.25);
+    const marginZ = Math.max(200, (maxZ - minZ) * 0.25);
+    
+    const width = (maxX - minX) + (marginX * 2);
+    const depth = (maxZ - minZ) + (marginZ * 2);
+
+    // Center the ground plane exactly on the resources' bounding box
+    const centerX = (minX + maxX) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+
+    const targetWidth = Math.max(width, 1000);
+    const targetDepth = Math.max(depth, 1000);
+
+    // Only recreate geometry if size changed significantly
+    const currentGeo = this.groundMesh.geometry as THREE.PlaneGeometry;
+    const params = currentGeo.parameters;
+    
+    if (Math.abs(params.width - targetWidth) > 10 || Math.abs(params.height - targetDepth) > 10) {
+      this.groundMesh.geometry.dispose();
+      this.groundMesh.geometry = new THREE.PlaneGeometry(targetWidth, targetDepth);
+    }
+
+    // Update position
+    this.groundMesh.position.set(centerX, -1, centerZ);
+
+    // Ensure the checkerboard grid stays locked to world coordinates (0,0)
+    // even as the plane resizes and moves around.
+    const material = this.groundMesh.material as THREE.MeshStandardMaterial;
+    if (material.map) {
+      const checkerSize = this.theme.ground.checkerboard?.size || 10;
+      const textureWorldSize = checkerSize * 2; // Since we draw 2x2 tiles per texture
+      
+      material.map.repeat.set(targetWidth / textureWorldSize, targetDepth / textureWorldSize);
+      
+      // Calculate world coordinates of the bottom-left corner of the plane
+      // The plane extends from -targetWidth/2 to +targetWidth/2 in local space
+      const startWorldX = centerX - targetWidth / 2;
+      const startWorldZ = centerZ - targetDepth / 2;
+      
+      // Offset the texture so that world (0,0) aligns with texture (0,0)
+      material.map.offset.set(-startWorldX / textureWorldSize, -startWorldZ / textureWorldSize);
+      material.map.needsUpdate = true;
+    }
+  }
+
+  private upsertResource(resource: Resource, position?: { x: number; y: number; z: number }): void {
+    let group = this.resources.get(resource.id);
+    
+    if (!group) {
       // Create new
-      mesh = this.resourceFactory.create(resource);
-      this.scene.add(mesh);
-      this.resources.set(resource.id, mesh);
+      group = this.resourceFactory.create(resource);
+      this.scene.add(group);
+      this.resources.set(resource.id, group);
       
       // Animate in
       this.animator.play({
@@ -213,9 +320,9 @@ export class Visualization {
       }
     }
     
-    // Update position
+    // Update position (group position, not mesh)
     if (position) {
-      mesh.position.set(position.x, position.y, position.z);
+      group.position.set(position.x, position.y, position.z);
     }
   }
   

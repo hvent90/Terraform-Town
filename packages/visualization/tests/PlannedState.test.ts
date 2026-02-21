@@ -26,10 +26,10 @@ describe.skipIf(!hasDOM)('VIS-015: Planned state visual', () => {
     return (vis as any).scene;
   }
 
-  function findResourceMesh(id: string): THREE.Mesh | undefined {
+  function findResourceMesh(id: string): THREE.Group | undefined {
     return getScene().children.find(
-      (c) => c instanceof THREE.Mesh && c.userData.id === id,
-    ) as THREE.Mesh | undefined;
+      (c) => c instanceof THREE.Group && c.userData.id === id,
+    ) as THREE.Group | undefined;
   }
 
   test('planned resource has reduced opacity (capped at state opacity)', () => {
@@ -55,7 +55,7 @@ describe.skipIf(!hasDOM)('VIS-015: Planned state visual', () => {
     // Material opacity may oscillate due to pulse, so check the stable targetOpacity
     expect(mesh!.userData.targetOpacity).toBeCloseTo(0.5, 1);
     // Material opacity should be near 0.5 (within pulse range ±0.15)
-    const material = mesh!.material as THREE.MeshStandardMaterial;
+    const material = mesh!.userData.mesh.material as THREE.MeshStandardMaterial;
     expect(material.opacity).toBeGreaterThanOrEqual(0.35);
     expect(material.opacity).toBeLessThanOrEqual(0.65);
   });
@@ -77,7 +77,7 @@ describe.skipIf(!hasDOM)('VIS-015: Planned state visual', () => {
 
     const mesh = findResourceMesh('vpc-1');
     expect(mesh).toBeDefined();
-    const material = mesh!.material as THREE.MeshStandardMaterial;
+    const material = mesh!.userData.mesh.material as THREE.MeshStandardMaterial;
     // VPC base opacity is 0.2, applied state opacity is 1.0
     // Final opacity = min(base, state) — applied should use base resource opacity
     expect(material.opacity).toBeCloseTo(0.2, 1); // VPC has base 0.2 opacity
@@ -104,8 +104,8 @@ describe.skipIf(!hasDOM)('VIS-015: Planned state visual', () => {
     expect(plannedMesh).toBeDefined();
     expect(appliedMesh).toBeDefined();
 
-    const plannedMat = plannedMesh!.material as THREE.MeshStandardMaterial;
-    const appliedMat = appliedMesh!.material as THREE.MeshStandardMaterial;
+    const plannedMat = plannedMesh!.userData.mesh.material as THREE.MeshStandardMaterial;
+    const appliedMat = appliedMesh!.userData.mesh.material as THREE.MeshStandardMaterial;
 
     expect(plannedMat.opacity).toBeLessThan(appliedMat.opacity);
   });
@@ -127,7 +127,7 @@ describe.skipIf(!hasDOM)('VIS-015: Planned state visual', () => {
     }
 
     const mesh = findResourceMesh('inst-1');
-    const material = mesh!.material as THREE.MeshStandardMaterial;
+    const material = mesh!.userData.mesh.material as THREE.MeshStandardMaterial;
     const opacityBefore = material.opacity;
 
     // Advance time — pulse oscillates with period 1000ms

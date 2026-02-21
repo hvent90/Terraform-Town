@@ -64,10 +64,10 @@ describe.skipIf(!hasDOM)('VIS-017: Update from terraform apply', () => {
     return (vis as any).scene;
   }
 
-  function findMesh(id: string): THREE.Mesh | undefined {
+  function findMesh(id: string): THREE.Group | undefined {
     return getScene().children.find(
-      (c) => c instanceof THREE.Mesh && c.userData.id === id,
-    ) as THREE.Mesh | undefined;
+      (c) => c instanceof THREE.Group && c.userData.id === id,
+    ) as THREE.Group | undefined;
   }
 
   test('terraform apply triggers update — resources appear in scene', () => {

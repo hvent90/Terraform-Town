@@ -60,7 +60,7 @@ describe.skipIf(!hasDOM)('VIS-018: Performance - 100 resources at 60fps', () => 
     vis.update(state);
 
     const meshes = getScene().children.filter(
-      (c) => c instanceof THREE.Mesh && c.userData.id,
+      (c) => c instanceof THREE.Group && c.userData.id,
     );
     expect(meshes.length).toBe(100);
   });

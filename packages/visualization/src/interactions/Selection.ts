@@ -115,9 +115,13 @@ export class SelectionManager {
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
 
     for (const intersect of intersects) {
-      const obj = intersect.object;
-      if (obj.userData && obj.userData.id) {
-        return { id: obj.userData.id, resource: obj.userData.resource };
+      // Walk up the object hierarchy to find the group with userData.id
+      let obj: THREE.Object3D | null = intersect.object;
+      while (obj) {
+        if (obj.userData && obj.userData.id) {
+          return { id: obj.userData.id, resource: obj.userData.resource };
+        }
+        obj = obj.parent;
       }
     }
     return null;

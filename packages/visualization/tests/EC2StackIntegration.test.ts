@@ -42,10 +42,10 @@ describe.skipIf(!hasDOM)('VIS-016: Full EC2 stack renders', () => {
     return (vis as any).scene;
   }
 
-  function findMesh(id: string): THREE.Mesh | undefined {
+  function findMesh(id: string): THREE.Group | undefined {
     return getScene().children.find(
-      (c) => c instanceof THREE.Mesh && c.userData.id === id,
-    ) as THREE.Mesh | undefined;
+      (c) => c instanceof THREE.Group && c.userData.id === id,
+    ) as THREE.Group | undefined;
   }
 
   test('all 4 resource types render', () => {
@@ -65,10 +65,10 @@ describe.skipIf(!hasDOM)('VIS-016: Full EC2 stack renders', () => {
     const sg = findMesh('sg-1')!;
     const inst = findMesh('inst-1')!;
 
-    const vpcMat = vpc.material as THREE.MeshStandardMaterial;
-    const subnetMat = subnet.material as THREE.MeshStandardMaterial;
-    const sgMat = sg.material as THREE.MeshStandardMaterial;
-    const instMat = inst.material as THREE.MeshStandardMaterial;
+    const vpcMat = vpc.userData.mesh.material as THREE.MeshStandardMaterial;
+    const subnetMat = subnet.userData.mesh.material as THREE.MeshStandardMaterial;
+    const sgMat = sg.userData.mesh.material as THREE.MeshStandardMaterial;
+    const instMat = inst.userData.mesh.material as THREE.MeshStandardMaterial;
 
     // Check colors match theme
     expect(vpcMat.color.getHexString()).toBe(new THREE.Color(defaultTheme.resources.vpc.color).getHexString());
