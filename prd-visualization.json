@@ -248,7 +248,7 @@
       "title": "Test runner passes",
       "description": "All tests pass, coverage report generated",
       "priority": 60,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "vitest run succeeds",
         "All tests pass",
