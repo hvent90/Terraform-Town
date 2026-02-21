@@ -47,6 +47,8 @@ Project: terraform-town - Mock AWS Provider
 - Filesystem mirror layout: `mirror/registry.terraform.io/terraform-town/aws-mock/0.1.0/<os>_<arch>/terraform-provider-aws-mock_v0.1.0`
 - Backend for integration tests: `startBackend(statePath)` in helpers.ts — returns `{ url, stop }`, uses random port via `Bun.serve({ port: 0 })`
 - Terraform state structure: `state.resources[].type`, `.name`, `.instances[].attributes` — parse with JSON.parse after apply
+- Adding new Go provider resource: create `schema_<resource>.go`, `resource_<resource>.go` (CRUD), add to ResourcesMap in `main.go`
+- S3 bucket policy Go schema: bucket (required), policy (required) — `id` is implicit in plugin-sdk, don't include
 
 ## 2026-02-20 14:59 - US-002
 - Installed terraform via homebrew
@@ -253,5 +255,29 @@ Project: terraform-town - Mock AWS Provider
   - `terraform plan -detailed-exitcode` returns 0 for no changes, 1 for error, 2 for changes present — useful for programmatic checks
   - `terraform show -json terraform.tfstate` provides structured JSON output of state for validation
   - State JSON structure: `values.root_module.resources[].values` contains the attribute map
+---
+
+## 2026-02-20 - US-018
+- Created integration test for `terraform destroy` at `tests/integration/terraform-destroy.test.ts`
+- 3 tests: destroy succeeds, state file is empty after destroy, mock backend confirms resource deleted (404 on read)
+- Files changed: tests/integration/terraform-destroy.test.ts
+- **Learnings for future iterations:**
+  - `terraform destroy -auto-approve` skips the interactive confirmation (same as apply)
+  - After destroy, `terraform.tfstate` has an empty `resources: []` array
+  - Can verify backend-side deletion by fetching the resource directly from the mock server — returns 404
+  - The existing CRUD wiring from US-013 (Delete calls DELETE /resource/:type/:id) and backend (US-010) handle destroy correctly out of the box
+---
+
+## 2026-02-20 - US-019
+- Added `aws_s3_bucket_policy` resource to Go provider: schema, CRUD wiring, registration in main.go
+- Created integration test at `tests/integration/terraform-references.test.ts` (4 tests)
+- Tests verify: reference resolution in plan, dependency graph, correct apply order, correct destroy order
+- Files changed: packages/terraform-provider-aws-mock/main.go, schema_s3_bucket_policy.go, resource_s3_bucket_policy.go, tests/integration/terraform-references.test.ts
+- **Learnings for future iterations:**
+  - Adding a new resource to Go provider follows a simple pattern: schema file, resource CRUD file, register in main.go ResourcesMap
+  - `extractAttributes`/`setAttributes` helpers from resource_s3_bucket.go are reusable across all resource types
+  - Terraform resolves references before calling the provider — the mock just stores already-resolved values
+  - `terraform show -json tfplan` provides structured plan output for verifying reference resolution
+  - Destroy order is automatically correct — Terraform infers dependencies from references and destroys in reverse order
 ---
 

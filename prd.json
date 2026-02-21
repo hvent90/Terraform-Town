@@ -231,7 +231,7 @@
       "title": "Integration: terraform destroy",
       "description": "Destroy removes resources from state",
       "priority": 76,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform destroy succeeds",
         "State file is empty or contains empty resources",
@@ -243,7 +243,7 @@
       "title": "Integration: resource references",
       "description": "Resources can reference each other",
       "priority": 75,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "aws_s3_bucket_policy can reference aws_s3_bucket.b.arn",
         "terraform plan shows dependency graph",

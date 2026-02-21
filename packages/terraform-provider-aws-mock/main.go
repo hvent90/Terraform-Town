@@ -20,7 +20,8 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"aws_s3_bucket": resourceS3Bucket(),
+			"aws_s3_bucket":        resourceS3Bucket(),
+			"aws_s3_bucket_policy": resourceS3BucketPolicy(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
