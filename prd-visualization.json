@@ -32,7 +32,7 @@
       "title": "TRON theme applies correctly",
       "description": "Default theme renders with dark background, emissive resources",
       "priority": 98,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Background color is #0a0a0a",
         "Resources have emissive materials",

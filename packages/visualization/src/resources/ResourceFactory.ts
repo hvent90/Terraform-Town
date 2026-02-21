@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Resource, Theme, ResourceType } from '../types';
+import type { Resource, Theme } from '../types';
 
 export class ResourceFactory {
   constructor(private theme: Theme) {}
@@ -43,7 +43,7 @@ export class ResourceFactory {
       emissiveIntensity: config.emissiveIntensity,
       transparent: config.opacity < 1,
       opacity: config.opacity,
-      wireframe: config.wireframe,
+      ...(config.wireframe !== undefined && { wireframe: config.wireframe }),
     });
     
     const mesh = new THREE.Mesh(geometry, material);

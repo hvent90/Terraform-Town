@@ -398,3 +398,16 @@ Project: terraform-town - Mock AWS Provider
   - vite.config.ts must be in the package where `vite` is installed, not at workspace root
 ---
 
+## 2026-02-20 - VIS-003
+- Added comprehensive theme spec tests to `packages/visualization/tests/theme.test.ts`
+- Added emissive material and wireframe tests to `packages/visualization/tests/ResourceFactory.test.ts`
+- Fixed ResourceFactory to conditionally spread wireframe (avoids THREE.Material warning for undefined wireframe)
+- Removed unused `ResourceType` import from ResourceFactory.ts
+- All 24 tests pass, build succeeds
+- Files changed: packages/visualization/src/resources/ResourceFactory.ts, packages/visualization/tests/ResourceFactory.test.ts, packages/visualization/tests/theme.test.ts, prd-visualization.json
+- **Learnings for future iterations:**
+  - Three.js warns about `wireframe: undefined` — use conditional spread `...(config.wireframe !== undefined && { wireframe: config.wireframe })` to avoid
+  - Theme spec tests verify all 7 resource colors, emissive properties, wireframe, and state configs against the requirements table
+  - Existing scaffolded implementation already satisfied VIS-003 acceptance criteria — tests confirmed correctness
+---
+
