@@ -152,6 +152,39 @@ describe("mock backend server", () => {
     });
   });
 
+  describe("aws_iam_role validation", () => {
+    test("returns 400 for invalid JSON assume_role_policy", async () => {
+      const res = await app.request("/resource/aws_iam_role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attributes: { name: "bad-role", assume_role_policy: "not json" },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("JSON");
+    });
+
+    test("accepts valid JSON assume_role_policy", async () => {
+      const res = await app.request("/resource/aws_iam_role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attributes: {
+            name: "good-role",
+            assume_role_policy: '{"Version":"2012-10-17","Statement":[]}',
+          },
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      const body = await res.json();
+      expect(body.id).toBe("good-role");
+    });
+  });
+
   describe("error handling", () => {
     test("returns 400 for missing attributes on POST", async () => {
       const res = await app.request("/resource/aws_s3_bucket", {

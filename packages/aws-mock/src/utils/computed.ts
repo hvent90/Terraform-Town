@@ -107,3 +107,11 @@ export function generatePublicDns(publicIp: string): string {
   const dashed = publicIp.replace(/\./g, "-");
   return `ec2-${dashed}.compute-1.amazonaws.com`;
 }
+
+export function generateIamRoleArn(roleName: string): string {
+  return `arn:aws:iam::${MOCK_ACCOUNT_ID}:role/${roleName}`;
+}
+
+export function generateIamUniqueId(): string {
+  return `AROA${randomHex(16).toUpperCase()}`;
+}

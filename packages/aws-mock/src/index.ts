@@ -6,6 +6,7 @@ import { createVpcHandler } from "./resources/vpc";
 import { createSubnetHandler } from "./resources/subnet";
 import { createSecurityGroupHandler } from "./resources/security-group";
 import { createInstanceHandler } from "./resources/instance";
+import { createIamRoleHandler } from "./resources/iam-role";
 import type { ResourceHandler } from "./resources/types";
 
 export function createApp(statePath: string) {
@@ -19,6 +20,7 @@ export function createApp(statePath: string) {
     aws_subnet: createSubnetHandler(store),
     aws_security_group: createSecurityGroupHandler(store),
     aws_instance: createInstanceHandler(store),
+    aws_iam_role: createIamRoleHandler(store),
   };
 
   // Create

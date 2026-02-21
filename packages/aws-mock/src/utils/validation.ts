@@ -17,3 +17,16 @@ export function validateBucketName(name: string): string | null {
 
   return null;
 }
+
+/**
+ * Validates that a string is valid JSON (for IAM policies, S3 bucket policies, etc.).
+ * Returns null if valid, or an error message string if invalid.
+ */
+export function validatePolicyJson(json: string): string | null {
+  try {
+    JSON.parse(json);
+    return null;
+  } catch {
+    return "Invalid JSON: must be a valid JSON policy document";
+  }
+}
