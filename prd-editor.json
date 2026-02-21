@@ -34,7 +34,7 @@
       "title": "Monaco editor displays file content",
       "description": "Editor shows HCL code with syntax highlighting",
       "priority": 98,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Editor shows file content",
         "HCL syntax highlighting works",
@@ -47,7 +47,7 @@
       "title": "Split layout: editor + visualization",
       "description": "Screen split with editor on left, visualization on right",
       "priority": 97,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Editor panel on left",
         "Visualization panel on right",

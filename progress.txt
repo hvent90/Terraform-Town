@@ -699,3 +699,34 @@ Project: terraform-town - Mock AWS Provider
   - `.tf` file icon label: "HCL", fallback: "TXT" — kept simple, can be replaced with SVG icons later
 ---
 
+## 2026-02-21 - ED-003
+- Updated Editor component to accept `value` and `onChange` props (controlled component)
+- Changed from `defaultValue` (uncontrolled) to `value` (controlled) so content updates on file switch
+- Added `EditorProps` interface: `{ value?: string, onChange?: (value: string | undefined) => void }`
+- Falls back to sample HCL content when no value provided (`value ?? SAMPLE_HCL`)
+- Created 6 tests at `packages/editor/tests/EditorContent.test.tsx`
+- Tests verify: props acceptance, controlled value, vs-dark theme, HCL language, re-render, default content
+- 15 editor tests pass, 131 visualization tests pass, build succeeds
+- Files changed: packages/editor/src/Editor.tsx, packages/editor/tests/EditorContent.test.tsx
+- **Learnings for future iterations:**
+  - Monaco in jsdom renders a loading spinner — can't test actual editor content in DOM tests
+  - Use source file inspection (fs.readFileSync) to verify Monaco props like `value=`, `theme=` in tests
+  - `Function.length` checks param count — useful for verifying component accepts props (0 for no-arg, 1 for props)
+  - `@monaco-editor/react` `value` prop = controlled mode (updates on re-render), `defaultValue` = uncontrolled (ignores re-renders)
+---
+
+## 2026-02-21 - ED-004
+- Created SplitLayout component at `packages/editor/src/SplitLayout.tsx`
+- Created tests at `packages/editor/tests/SplitLayout.test.tsx` (9 tests)
+- Updated `index.tsx` to use SplitLayout with Editor on left, visualization container on right
+- Flexbox row layout: 50/50 split, full height, overflow hidden on both panels
+- SplitLayout accepts `left` and `right` ReactNode props for content injection
+- 24 editor tests pass, 131 visualization tests pass, build succeeds (42 modules, 293ms)
+- Files changed: packages/editor/src/SplitLayout.tsx, packages/editor/src/index.tsx, packages/editor/tests/SplitLayout.test.tsx
+- **Learnings for future iterations:**
+  - SplitLayout uses `data-testid` attributes for panel identification in tests
+  - `left`/`right` props as ReactNode allow flexible content injection (Editor, visualization container, etc.)
+  - Visualization container is a plain div with `id="visualization-container"` — Three.js Visualization class attaches to this
+  - Resizable split marked as optional in acceptance criteria — basic 50/50 split sufficient
+---
+
