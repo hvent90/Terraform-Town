@@ -185,6 +185,44 @@ describe("mock backend server", () => {
     });
   });
 
+  describe("POST /provider/configure", () => {
+    test("accepts valid region", async () => {
+      const res = await app.request("/provider/configure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: "us-east-1" }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.region).toBe("us-east-1");
+    });
+
+    test("returns 400 for invalid region", async () => {
+      const res = await app.request("/provider/configure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: "not-a-region" }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("region");
+    });
+
+    test("returns 400 for empty region", async () => {
+      const res = await app.request("/provider/configure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: "" }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("region");
+    });
+  });
+
   describe("error handling", () => {
     test("returns 400 for missing attributes on POST", async () => {
       const res = await app.request("/resource/aws_s3_bucket", {

@@ -1,7 +1,27 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { buildProvider, setupTerraformEnv, terraform, type TerraformEnv } from "./helpers";
+import { join } from "node:path";
+import {
+  buildProvider,
+  setupTerraformEnv,
+  terraform,
+  startBackend,
+  type TerraformEnv,
+  type BackendServer,
+} from "./helpers";
 
-const TF_CONFIG = `
+describe("US-015: terraform plan", () => {
+  let env: TerraformEnv;
+  let backend: BackendServer;
+
+  beforeAll(async () => {
+    await buildProvider();
+    const statePath = join(
+      await import("node:os").then((os) => os.tmpdir()),
+      `tf-plan-state-${Date.now()}.json`,
+    );
+    backend = startBackend(statePath);
+
+    const tfConfig = `
 terraform {
   required_providers {
     aws = {
@@ -12,24 +32,20 @@ terraform {
 }
 
 provider "aws" {
-  backend_url = "http://localhost:3000"
+  backend_url = "${backend.url}"
+  region      = "us-east-1"
 }
 
 resource "aws_s3_bucket" "test" {
   bucket = "my-test-bucket"
 }
 `;
-
-describe("US-015: terraform plan", () => {
-  let env: TerraformEnv;
-
-  beforeAll(async () => {
-    await buildProvider();
-    env = await setupTerraformEnv(TF_CONFIG);
+    env = await setupTerraformEnv(tfConfig);
     await terraform(env, ["init"]);
   }, 30000);
 
   afterAll(async () => {
+    backend?.stop();
     await env?.cleanup();
   });
 

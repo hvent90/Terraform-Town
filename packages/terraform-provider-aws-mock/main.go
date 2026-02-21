@@ -18,6 +18,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("AWS_MOCK_BACKEND_URL", "http://localhost:3000"),
 				Description: "URL of the mock AWS backend server",
 			},
+			"region": {
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_DEFAULT_REGION", nil),
+				Description: "The AWS region to use",
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"aws_s3_bucket":        resourceS3Bucket(),
@@ -33,10 +39,18 @@ func Provider() *schema.Provider {
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	backendURL := d.Get("backend_url").(string)
-	return &MockClient{
+	region := d.Get("region").(string)
+
+	client := &MockClient{
 		BackendURL: backendURL,
 		HTTPClient: &http.Client{},
-	}, nil
+	}
+
+	if err := client.ConfigureProvider(region); err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return client, nil
 }
 
 func main() {

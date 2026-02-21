@@ -8,6 +8,7 @@ import { createSecurityGroupHandler } from "./resources/security-group";
 import { createInstanceHandler } from "./resources/instance";
 import { createIamRoleHandler } from "./resources/iam-role";
 import type { ResourceHandler } from "./resources/types";
+import { validateRegion } from "./utils/validation";
 
 export function createApp(statePath: string) {
   const app = new Hono();
@@ -22,6 +23,17 @@ export function createApp(statePath: string) {
     aws_instance: createInstanceHandler(store),
     aws_iam_role: createIamRoleHandler(store),
   };
+
+  // Provider configuration
+  app.post("/provider/configure", async (c) => {
+    const body = await c.req.json();
+    const region = body.region;
+    const error = validateRegion(region);
+    if (error) {
+      return c.json({ error }, 400);
+    }
+    return c.json({ region }, 200);
+  });
 
   // Create
   app.post("/resource/:type", async (c) => {

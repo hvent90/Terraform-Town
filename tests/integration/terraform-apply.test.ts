@@ -34,6 +34,7 @@ terraform {
 
 provider "aws" {
   backend_url = "${backend.url}"
+  region      = "us-east-1"
 }
 
 resource "aws_s3_bucket" "test" {

@@ -15,6 +15,7 @@ terraform {
 
 provider "aws" {
   backend_url = "http://localhost:3000"
+  region      = "us-east-1"
 }
 `;
 

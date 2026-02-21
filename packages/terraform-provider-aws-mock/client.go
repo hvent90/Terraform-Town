@@ -18,6 +18,35 @@ type ResourceResponse struct {
 	Attributes map[string]interface{} `json:"attributes"`
 }
 
+func (c *MockClient) ConfigureProvider(region string) error {
+	body, err := json.Marshal(map[string]string{"region": region})
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.HTTPClient.Post(
+		fmt.Sprintf("%s/provider/configure", c.BackendURL),
+		"application/json",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if json.Unmarshal(respBody, &errResp) == nil && errResp.Error != "" {
+			return fmt.Errorf("%s", errResp.Error)
+		}
+		return fmt.Errorf("provider configuration failed with status %d: %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
 func (c *MockClient) CreateResource(resourceType string, attrs map[string]interface{}) (*ResourceResponse, error) {
 	body, err := json.Marshal(map[string]interface{}{"attributes": attrs})
 	if err != nil {

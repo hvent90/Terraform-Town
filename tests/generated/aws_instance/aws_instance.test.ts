@@ -31,6 +31,7 @@ terraform {
 
 provider "aws" {
   backend_url = "${backendUrl}"
+  region      = "us-east-1"
 }
 
 resource "aws_vpc" "test" {

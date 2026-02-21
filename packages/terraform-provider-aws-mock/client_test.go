@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -241,8 +242,56 @@ func TestProviderConfigure(t *testing.T) {
 	if p.Schema["backend_url"] == nil {
 		t.Fatal("provider should have backend_url schema")
 	}
+	if p.Schema["region"] == nil {
+		t.Fatal("provider should have region schema")
+	}
+	if !p.Schema["region"].Required {
+		t.Error("region should be Required")
+	}
 	if p.ConfigureContextFunc == nil {
 		t.Fatal("provider should have ConfigureContextFunc")
+	}
+}
+
+func TestConfigureProviderValidRegion(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/provider/configure" {
+			t.Errorf("expected /provider/configure, got %s", r.URL.Path)
+		}
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		var body map[string]string
+		json.NewDecoder(r.Body).Decode(&body)
+		if body["region"] != "us-east-1" {
+			t.Errorf("expected region=us-east-1, got %s", body["region"])
+		}
+		w.WriteHeader(200)
+		json.NewEncoder(w).Encode(map[string]string{"region": "us-east-1"})
+	}))
+	defer server.Close()
+
+	client := &MockClient{BackendURL: server.URL, HTTPClient: server.Client()}
+	err := client.ConfigureProvider("us-east-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestConfigureProviderInvalidRegion(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid region: \"not-a-region\" is not a valid AWS region"})
+	}))
+	defer server.Close()
+
+	client := &MockClient{BackendURL: server.URL, HTTPClient: server.Client()}
+	err := client.ConfigureProvider("not-a-region")
+	if err == nil {
+		t.Fatal("expected error for invalid region")
+	}
+	if !strings.Contains(err.Error(), "region") {
+		t.Errorf("error should mention region, got: %s", err.Error())
 	}
 }
 
