@@ -16,7 +16,17 @@ export class SelectionManager {
 
   private boundMouseMove: (e: MouseEvent) => void;
   private boundClick: (e: MouseEvent) => void;
+  private boundDblClick: (e: MouseEvent) => void;
   private boundKeyDown: (e: KeyboardEvent) => void;
+
+  // Focus animation state
+  private focusAnim: {
+    startPos: THREE.Vector3;
+    endPos: THREE.Vector3;
+    elapsed: number;
+    duration: number;
+    camera: THREE.Camera;
+  } | null = null;
 
   constructor(camera: THREE.Camera, scene: THREE.Scene) {
     this.camera = camera;
@@ -25,6 +35,7 @@ export class SelectionManager {
     this.mouse = new THREE.Vector2();
     this.boundMouseMove = (e: MouseEvent) => this.onMouseMove(e);
     this.boundClick = (e: MouseEvent) => this.onClick(e);
+    this.boundDblClick = (e: MouseEvent) => this.onDoubleClick(e);
     this.boundKeyDown = (e: KeyboardEvent) => this.onKeyDown(e);
   }
 
@@ -32,6 +43,7 @@ export class SelectionManager {
     this.domElement = domElement;
     domElement.addEventListener('mousemove', this.boundMouseMove);
     domElement.addEventListener('click', this.boundClick);
+    domElement.addEventListener('dblclick', this.boundDblClick);
     document.addEventListener('keydown', this.boundKeyDown);
   }
 
@@ -152,6 +164,55 @@ export class SelectionManager {
     this.emit('select', hitId);
   }
 
+  private onDoubleClick(event: MouseEvent): void {
+    const hit = this.raycastHit(event);
+    if (hit) {
+      const obj = this.scene.children.find(
+        (c) => c.userData && c.userData.id === hit.id
+      );
+      if (obj) {
+        const pos = { x: obj.position.x, y: obj.position.y, z: obj.position.z };
+        this.emit('focus', hit.id, pos);
+      }
+    }
+  }
+
+  focusCamera(target: THREE.Vector3, cam: THREE.Camera, duration: number): void {
+    // Calculate end position: offset above and behind the target
+    const offset = new THREE.Vector3(0, 20, 40);
+    const endPos = target.clone().add(offset);
+
+    this.focusAnim = {
+      startPos: cam.position.clone(),
+      endPos,
+      elapsed: 0,
+      duration,
+      camera: cam,
+    };
+  }
+
+  updateFocusAnimation(deltaMs: number): void {
+    if (!this.focusAnim) return;
+
+    this.focusAnim.elapsed += deltaMs;
+    const t = Math.min(this.focusAnim.elapsed / this.focusAnim.duration, 1);
+
+    // easeInOut cubic for smooth animation
+    const eased = t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    this.focusAnim.camera.position.lerpVectors(
+      this.focusAnim.startPos,
+      this.focusAnim.endPos,
+      eased
+    );
+
+    if (t >= 1) {
+      this.focusAnim = null;
+    }
+  }
+
   private onKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && this.selected !== null) {
       this.selected = null;
@@ -200,6 +261,7 @@ export class SelectionManager {
 
   dispose(): void {
     if (this.domElement) {
+      this.domElement.removeEventListener('dblclick', this.boundDblClick);
       this.domElement.removeEventListener('mousemove', this.boundMouseMove);
       this.domElement.removeEventListener('click', this.boundClick);
     }
@@ -213,5 +275,6 @@ export class SelectionManager {
     this.tooltip = null;
     this.detailPanel = null;
     this.domElement = null;
+    this.focusAnim = null;
   }
 }

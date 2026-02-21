@@ -86,6 +86,9 @@ export class Visualization {
     this.container.appendChild(this.selection.getDetailPanel());
     this.selection.on('select', (id: string) => this.onSelect(id));
     this.selection.on('hover', (id: string | null) => this.onHover(id));
+    this.selection.on('focus', (_id: string, pos: { x: number; y: number; z: number }) => {
+      this.selection.focusCamera(new THREE.Vector3(pos.x, pos.y, pos.z), this.camera, 600);
+    });
   }
   
   private setupLighting(): void {
@@ -111,6 +114,7 @@ export class Visualization {
     this.animationId = requestAnimationFrame(this.animate);
     this.controls.update();
     this.animator.update(16); // ~60fps
+    this.selection.updateFocusAnimation(16);
     this.renderer.render(this.scene, this.camera);
   };
   
