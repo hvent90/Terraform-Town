@@ -62,7 +62,7 @@
       "title": "Go provider: Register EC2 stack schemas",
       "description": "Add schemas for aws_vpc, aws_subnet, aws_security_group, aws_instance to Go provider",
       "priority": 65,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform providers schema shows all 4 resource types",
         "Schemas match AWS provider structure",
@@ -74,7 +74,7 @@
       "title": "Go provider: Wire EC2 stack CRUD to backend",
       "description": "Connect Go provider CRUD functions to mock backend for all 4 resources",
       "priority": 64,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Each resource has CreateContext, ReadContext, UpdateContext, DeleteContext",
         "CRUD calls mock backend HTTP API",
@@ -86,7 +86,7 @@
       "title": "Bucket naming validation",
       "description": "Validate S3 bucket names follow DNS naming rules",
       "priority": 63,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Names must be 3-63 characters",
         "Names must be lowercase letters, numbers, and hyphens only",
@@ -99,7 +99,7 @@
       "title": "IAM policy JSON validation",
       "description": "Validate IAM role trust policies are valid JSON",
       "priority": 62,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "assume_role_policy must be valid JSON",
         "Invalid JSON returns clear error",
@@ -111,7 +111,7 @@
       "title": "Region validation",
       "description": "Validate region values are valid AWS regions",
       "priority": 61,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Provider region must be a valid AWS region code",
         "Invalid region returns clear error",
@@ -123,7 +123,7 @@
       "title": "Reference existence check",
       "description": "Validate that referenced resources exist before creating dependent resource",
       "priority": 60,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "aws_instance.subnet_id must reference existing subnet",
         "aws_instance.vpc_security_group_ids must reference existing security groups",
@@ -136,7 +136,7 @@
       "title": "Integration: Full EC2 stack flow",
       "description": "End-to-end test creating VPC → Subnet → Security Group → Instance",
       "priority": 59,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "terraform apply creates all 4 resources in correct order",
         "terraform destroy removes in correct order",
@@ -149,7 +149,7 @@
       "title": "Update test runner for Phase 2",
       "description": "Update scripts/run-tests.sh to include Phase 2 stories",
       "priority": 58,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Test runner validates all Phase 2 stories",
         "Generated tests included in test run",

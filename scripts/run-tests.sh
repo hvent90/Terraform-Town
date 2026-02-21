@@ -152,9 +152,99 @@ else
   fail_story "US-020" "Test runner for Ralph"
 fi
 
+# ========== Phase 2: EC2 Stack ==========
+PRD2_FILE="$PROJECT_ROOT/prd-phase2.json"
+
+echo ""
+echo "=== Phase 2: EC2 Stack ==="
+echo ""
+
+echo "--- EC2 Resource Handlers ---"
+
+# US-021: aws_vpc resource handler
+run_story_test "US-021" "aws_vpc resource handler" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/vpc.test.ts"
+
+# US-022: aws_subnet resource handler
+run_story_test "US-022" "aws_subnet resource handler" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/subnet.test.ts"
+
+# US-023: aws_security_group resource handler
+run_story_test "US-023" "aws_security_group resource handler" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/security-group.test.ts"
+
+# US-024: aws_instance resource handler
+run_story_test "US-024" "aws_instance resource handler" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/instance.test.ts"
+
+echo ""
+echo "--- EC2 Go Provider ---"
+
+# US-025 & US-026: Go provider schema + CRUD wiring (Go tests cover both)
+if (cd "$PROJECT_ROOT/packages/terraform-provider-aws-mock" && go test ./...) > /dev/null 2>&1; then
+  pass_story "US-025" "Go provider: Register EC2 stack schemas"
+  pass_story "US-026" "Go provider: Wire EC2 stack CRUD to backend"
+else
+  fail_story "US-025" "Go provider: Register EC2 stack schemas"
+  fail_story "US-026" "Go provider: Wire EC2 stack CRUD to backend"
+fi
+
+echo ""
+echo "--- Semantic Validation ---"
+
+# US-027: Bucket naming validation
+run_story_test "US-027" "Bucket naming validation" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/bucket-name-validation.test.ts"
+
+# US-028: IAM policy JSON validation
+run_story_test "US-028" "IAM policy JSON validation" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/policy-json-validation.test.ts"
+
+# US-029: Region validation
+run_story_test "US-029" "Region validation" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/region-validation.test.ts"
+
+# US-030: Reference existence check
+run_story_test "US-030" "Reference existence check" \
+  bun test "$PROJECT_ROOT/packages/aws-mock/tests/reference-validation.test.ts"
+
+echo ""
+echo "--- EC2 Integration ---"
+
+# US-031: Integration: Full EC2 stack flow
+run_story_test "US-031" "Integration: Full EC2 stack flow" \
+  bun test "$PROJECT_ROOT/tests/integration/ec2-stack-flow.test.ts"
+
+echo ""
+echo "--- Generated Tests ---"
+
+# Generated test suites (part of US-021 through US-024 validation)
+run_story_test "GEN-VPC" "Generated: aws_vpc" \
+  bun test "$PROJECT_ROOT/tests/generated/aws_vpc/aws_vpc.test.ts"
+
+run_story_test "GEN-SUBNET" "Generated: aws_subnet" \
+  bun test "$PROJECT_ROOT/tests/generated/aws_subnet/aws_subnet.test.ts"
+
+run_story_test "GEN-SG" "Generated: aws_security_group" \
+  bun test "$PROJECT_ROOT/tests/generated/aws_security_group/aws_security_group.test.ts"
+
+run_story_test "GEN-INSTANCE" "Generated: aws_instance" \
+  bun test "$PROJECT_ROOT/tests/generated/aws_instance/aws_instance.test.ts"
+
+echo ""
+echo "--- Phase 2 Meta ---"
+
+# US-032: Test runner for Phase 2 (self-check: this script covers Phase 2 stories)
+if grep -q 'US-031' "$SCRIPT_DIR/run-tests.sh" && \
+   grep -q 'prd-phase2.json' "$SCRIPT_DIR/run-tests.sh"; then
+  pass_story "US-032" "Update test runner for Phase 2"
+else
+  fail_story "US-032" "Update test runner for Phase 2"
+fi
+
 # ---------- Update prd.json ----------
 echo ""
-echo "--- Updating prd.json ---"
+echo "--- Updating PRD files ---"
 
 # Build JSON object from results file
 results_json="{"
@@ -165,6 +255,7 @@ while IFS='=' read -r id status; do
 done < "$RESULTS_FILE"
 results_json+="}"
 
+# Update prd.json (Phase 1)
 bun -e "
 const prd = JSON.parse(await Bun.file('$PRD_FILE').text());
 const results = $results_json;
@@ -177,6 +268,21 @@ for (const story of prd.userStories) {
 
 await Bun.write('$PRD_FILE', JSON.stringify(prd, null, 2) + '\n');
 console.log('prd.json updated.');
+"
+
+# Update prd-phase2.json (Phase 2)
+bun -e "
+const prd = JSON.parse(await Bun.file('$PRD2_FILE').text());
+const results = $results_json;
+
+for (const story of prd.userStories) {
+  if (results[story.id] !== undefined) {
+    story.passes = results[story.id] === 'pass';
+  }
+}
+
+await Bun.write('$PRD2_FILE', JSON.stringify(prd, null, 2) + '\n');
+console.log('prd-phase2.json updated.');
 "
 
 # ---------- Summary ----------
