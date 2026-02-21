@@ -265,3 +265,156 @@ func TestProviderResourceHasCRUD(t *testing.T) {
 		t.Error("aws_s3_bucket should have DeleteContext")
 	}
 }
+
+// --- EC2 Stack: Client CRUD tests (US-026) ---
+
+func TestCreateEC2ResourceCallsBackend(t *testing.T) {
+	resources := []struct {
+		resourceType string
+		attrs        map[string]interface{}
+		expectedID   string
+		computedKey  string
+		computedVal  string
+	}{
+		{
+			resourceType: "aws_vpc",
+			attrs:        map[string]interface{}{"cidr_block": "10.0.0.0/16"},
+			expectedID:   "vpc-abc123",
+			computedKey:  "arn",
+			computedVal:  "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-abc123",
+		},
+		{
+			resourceType: "aws_subnet",
+			attrs:        map[string]interface{}{"vpc_id": "vpc-abc123", "cidr_block": "10.0.1.0/24"},
+			expectedID:   "subnet-abc123",
+			computedKey:  "arn",
+			computedVal:  "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-abc123",
+		},
+		{
+			resourceType: "aws_security_group",
+			attrs:        map[string]interface{}{"name": "test-sg", "vpc_id": "vpc-abc123"},
+			expectedID:   "sg-abc123",
+			computedKey:  "arn",
+			computedVal:  "arn:aws:ec2:us-east-1:123456789012:security-group/sg-abc123",
+		},
+		{
+			resourceType: "aws_instance",
+			attrs:        map[string]interface{}{"ami": "ami-12345", "instance_type": "t2.micro"},
+			expectedID:   "i-abc123",
+			computedKey:  "instance_state",
+			computedVal:  "running",
+		},
+	}
+
+	for _, tc := range resources {
+		t.Run(tc.resourceType, func(t *testing.T) {
+			var method, path string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				method = r.Method
+				path = r.URL.Path
+				w.WriteHeader(201)
+				json.NewEncoder(w).Encode(ResourceResponse{
+					ID:         tc.expectedID,
+					Attributes: map[string]interface{}{"id": tc.expectedID, tc.computedKey: tc.computedVal},
+				})
+			}))
+			defer server.Close()
+
+			client := &MockClient{BackendURL: server.URL, HTTPClient: server.Client()}
+			result, err := client.CreateResource(tc.resourceType, tc.attrs)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if method != "POST" {
+				t.Errorf("expected POST, got %s", method)
+			}
+			if path != "/resource/"+tc.resourceType {
+				t.Errorf("expected /resource/%s, got %s", tc.resourceType, path)
+			}
+			if result.ID != tc.expectedID {
+				t.Errorf("expected id=%s, got %s", tc.expectedID, result.ID)
+			}
+			if result.Attributes[tc.computedKey] != tc.computedVal {
+				t.Errorf("expected %s=%s, got %v", tc.computedKey, tc.computedVal, result.Attributes[tc.computedKey])
+			}
+		})
+	}
+}
+
+func TestReadEC2ResourceFromBackend(t *testing.T) {
+	resources := []struct {
+		resourceType string
+		id           string
+	}{
+		{"aws_vpc", "vpc-abc123"},
+		{"aws_subnet", "subnet-abc123"},
+		{"aws_security_group", "sg-abc123"},
+		{"aws_instance", "i-abc123"},
+	}
+
+	for _, tc := range resources {
+		t.Run(tc.resourceType, func(t *testing.T) {
+			var method, path string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				method = r.Method
+				path = r.URL.Path
+				json.NewEncoder(w).Encode(ResourceResponse{
+					ID:         tc.id,
+					Attributes: map[string]interface{}{"id": tc.id},
+				})
+			}))
+			defer server.Close()
+
+			client := &MockClient{BackendURL: server.URL, HTTPClient: server.Client()}
+			result, err := client.ReadResource(tc.resourceType, tc.id)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if method != "GET" {
+				t.Errorf("expected GET, got %s", method)
+			}
+			if path != "/resource/"+tc.resourceType+"/"+tc.id {
+				t.Errorf("expected /resource/%s/%s, got %s", tc.resourceType, tc.id, path)
+			}
+			if result.ID != tc.id {
+				t.Errorf("expected id=%s, got %s", tc.id, result.ID)
+			}
+		})
+	}
+}
+
+func TestDeleteEC2ResourceFromBackend(t *testing.T) {
+	resources := []struct {
+		resourceType string
+		id           string
+	}{
+		{"aws_vpc", "vpc-abc123"},
+		{"aws_subnet", "subnet-abc123"},
+		{"aws_security_group", "sg-abc123"},
+		{"aws_instance", "i-abc123"},
+	}
+
+	for _, tc := range resources {
+		t.Run(tc.resourceType, func(t *testing.T) {
+			var method, path string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				method = r.Method
+				path = r.URL.Path
+				w.WriteHeader(204)
+			}))
+			defer server.Close()
+
+			client := &MockClient{BackendURL: server.URL, HTTPClient: server.Client()}
+			err := client.DeleteResource(tc.resourceType, tc.id)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if method != "DELETE" {
+				t.Errorf("expected DELETE, got %s", method)
+			}
+			if path != "/resource/"+tc.resourceType+"/"+tc.id {
+				t.Errorf("expected /resource/%s/%s, got %s", tc.resourceType, tc.id, path)
+			}
+		})
+	}
+}

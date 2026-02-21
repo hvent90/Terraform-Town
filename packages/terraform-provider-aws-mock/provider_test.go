@@ -384,3 +384,29 @@ func TestInstanceSchemaNoRequiredAttributes(t *testing.T) {
 		}
 	}
 }
+
+// --- EC2 Stack: CRUD wiring tests (US-026) ---
+
+func TestEC2ResourcesHaveCRUD(t *testing.T) {
+	p := Provider()
+	ec2Resources := []string{"aws_vpc", "aws_subnet", "aws_security_group", "aws_instance"}
+	for _, name := range ec2Resources {
+		res := p.ResourcesMap[name]
+		if res == nil {
+			t.Errorf("%s resource missing from provider", name)
+			continue
+		}
+		if res.CreateContext == nil {
+			t.Errorf("%s should have CreateContext", name)
+		}
+		if res.ReadContext == nil {
+			t.Errorf("%s should have ReadContext", name)
+		}
+		if res.UpdateContext == nil {
+			t.Errorf("%s should have UpdateContext", name)
+		}
+		if res.DeleteContext == nil {
+			t.Errorf("%s should have DeleteContext", name)
+		}
+	}
+}
