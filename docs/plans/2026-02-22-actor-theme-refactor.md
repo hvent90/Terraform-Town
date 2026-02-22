@@ -19,7 +19,7 @@
 - [ ] **Task 1:** Foundation — shared types, constants, context (`src/shared/`)
 - [ ] **Task 2:** Theme system — types, ThemeProvider, GLSL declarations (`src/theme/`, `src/glsl.d.ts`)
 - [ ] **Task 3:** Extract Tron shaders to `.glsl` files (`src/theme/tron/shaders/`)
-- [ ] **Task 4:** Extract Tron colors + UI tokens (`src/theme/tron/colors.ts`)
+- [ ] **Task 4:** Extract Tron colors, UI tokens, effect definitions (`src/theme/tron/colors.ts`, `src/theme/tron/effects.ts`)
 - [ ] **Task 5:** Extract Tron meshes — CubeMesh, ReflectiveGround (`src/theme/tron/meshes/`)
 - [ ] **Task 6:** Extract Tron effects — all 7 components (`src/theme/tron/effects/`)
 - [ ] **Task 7:** Extract Tron scene — SceneLights, PostProcessing (`src/theme/tron/`)
@@ -48,44 +48,6 @@ Create the shared layer that everything else imports from.
 
 ```ts
 export type ActorState = 'idle' | 'hover' | 'selected' | (string & {});
-
-export type EffectKey = 'edgeIntensify' | 'faceOpacity' | 'breathingAmp' | 'haloBloom' | 'lift' | 'particleAttract' | 'faceSeparation' | 'tracePulse' | 'colorTemp';
-
-export type SelectEffectKey = 'orbitRing' | 'dataStream' | 'groundBeam' | 'holoFlicker' | 'edgePulse' | 'faceDataOverlay' | 'statusGlow' | 'traceActivation';
-
-export const EFFECT_LABELS: Record<EffectKey, string> = {
-  edgeIntensify: 'Edge Intensify',
-  faceOpacity: 'Face Opacity',
-  breathingAmp: 'Breathing Amp',
-  haloBloom: 'Halo Bloom',
-  lift: 'Lift',
-  particleAttract: 'Particle Attract',
-  faceSeparation: 'Face Separation',
-  tracePulse: 'Trace Pulse',
-  colorTemp: 'Color Temp Shift',
-};
-
-export const SELECT_EFFECT_LABELS: Record<SelectEffectKey, string> = {
-  orbitRing: 'Orbit Ring',
-  dataStream: 'Data Stream',
-  groundBeam: 'Ground Beam',
-  holoFlicker: 'Holo Flicker',
-  edgePulse: 'Edge Pulse',
-  faceDataOverlay: 'Face Data Overlay',
-  statusGlow: 'Status Glow',
-  traceActivation: 'Trace Activation',
-};
-
-export const ALL_EFFECTS: EffectKey[] = Object.keys(EFFECT_LABELS) as EffectKey[];
-export const ALL_SELECT_EFFECTS: SelectEffectKey[] = Object.keys(SELECT_EFFECT_LABELS) as SelectEffectKey[];
-
-export const DEFAULT_TOGGLES: Record<EffectKey, boolean> = Object.fromEntries(
-  ALL_EFFECTS.map(k => [k, false])
-) as Record<EffectKey, boolean>;
-
-export const DEFAULT_SELECT_TOGGLES: Record<SelectEffectKey, boolean> = Object.fromEntries(
-  ALL_SELECT_EFFECTS.map(k => [k, false])
-) as Record<SelectEffectKey, boolean>;
 ```
 
 **Step 2: Create `src/shared/geometry.ts`**
@@ -126,12 +88,11 @@ export function createHaloTexture() {
 
 ```ts
 import { createContext, useContext } from 'react';
-import type { EffectKey, SelectEffectKey } from './types';
 
 export type SceneContextType = {
-  togglesRef: React.MutableRefObject<Record<EffectKey, boolean>>;
+  togglesRef: React.MutableRefObject<Record<string, boolean>>;
   hoverTRef: React.MutableRefObject<number>;
-  selectTogglesRef: React.MutableRefObject<Record<SelectEffectKey, boolean>>;
+  selectTogglesRef: React.MutableRefObject<Record<string, boolean>>;
   selectedTRef: React.MutableRefObject<number>;
   onSelect: () => void;
   onDeselect: () => void;
@@ -307,10 +268,11 @@ git commit -m "refactor: extract all shaders to .glsl files"
 
 ---
 
-### Task 4: Extract Tron Colors
+### Task 4: Extract Tron Colors + Effect Definitions
 
 **Files:**
 - Create: `src/theme/tron/colors.ts`
+- Create: `src/theme/tron/effects.ts`
 
 **Step 1: Create `src/theme/tron/colors.ts`**
 
@@ -370,11 +332,53 @@ export const ui = {
 };
 ```
 
-**Step 2: Commit**
+**Step 2: Create `src/theme/tron/effects.ts`**
+
+```ts
+export type EffectKey = 'edgeIntensify' | 'faceOpacity' | 'breathingAmp' | 'haloBloom' | 'lift' | 'particleAttract' | 'faceSeparation' | 'tracePulse' | 'colorTemp';
+
+export type SelectEffectKey = 'orbitRing' | 'dataStream' | 'groundBeam' | 'holoFlicker' | 'edgePulse' | 'faceDataOverlay' | 'statusGlow' | 'traceActivation';
+
+export const EFFECT_LABELS: Record<EffectKey, string> = {
+  edgeIntensify: 'Edge Intensify',
+  faceOpacity: 'Face Opacity',
+  breathingAmp: 'Breathing Amp',
+  haloBloom: 'Halo Bloom',
+  lift: 'Lift',
+  particleAttract: 'Particle Attract',
+  faceSeparation: 'Face Separation',
+  tracePulse: 'Trace Pulse',
+  colorTemp: 'Color Temp Shift',
+};
+
+export const SELECT_EFFECT_LABELS: Record<SelectEffectKey, string> = {
+  orbitRing: 'Orbit Ring',
+  dataStream: 'Data Stream',
+  groundBeam: 'Ground Beam',
+  holoFlicker: 'Holo Flicker',
+  edgePulse: 'Edge Pulse',
+  faceDataOverlay: 'Face Data Overlay',
+  statusGlow: 'Status Glow',
+  traceActivation: 'Trace Activation',
+};
+
+export const ALL_EFFECTS: EffectKey[] = Object.keys(EFFECT_LABELS) as EffectKey[];
+export const ALL_SELECT_EFFECTS: SelectEffectKey[] = Object.keys(SELECT_EFFECT_LABELS) as SelectEffectKey[];
+
+export const DEFAULT_TOGGLES: Record<EffectKey, boolean> = Object.fromEntries(
+  ALL_EFFECTS.map(k => [k, false])
+) as Record<EffectKey, boolean>;
+
+export const DEFAULT_SELECT_TOGGLES: Record<SelectEffectKey, boolean> = Object.fromEntries(
+  ALL_SELECT_EFFECTS.map(k => [k, false])
+) as Record<SelectEffectKey, boolean>;
+```
+
+**Step 3: Commit**
 
 ```bash
-git add src/theme/tron/colors.ts
-git commit -m "refactor: extract Tron color constants and UI tokens"
+git add src/theme/tron/colors.ts src/theme/tron/effects.ts
+git commit -m "refactor: extract Tron color constants, UI tokens, and effect definitions"
 ```
 
 ---
