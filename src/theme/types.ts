@@ -1,4 +1,14 @@
 import type { ActorState } from '../shared/types';
+import type {
+  ToggleSwitchProps,
+  PanelProps,
+  BadgeProps,
+  KeyHintProps,
+  TooltipProps,
+  SlidePanelProps,
+  DataTableProps,
+  SectionHeaderProps,
+} from '../ui/components';
 
 export type Theme = {
   resources: Record<string, {
@@ -13,14 +23,14 @@ export type Theme = {
   PostProcessing: React.ComponentType;
   ui: {
     components: {
-      ToggleSwitch: React.ComponentType<any>;
-      Panel: React.ComponentType<any>;
-      Badge: React.ComponentType<any>;
-      KeyHint: React.ComponentType<any>;
-      Tooltip: React.ComponentType<any>;
-      SlidePanel: React.ComponentType<any>;
-      DataTable: React.ComponentType<any>;
-      SectionHeader: React.ComponentType<any>;
+      ToggleSwitch: React.ComponentType<ToggleSwitchProps>;
+      Panel: React.ComponentType<PanelProps>;
+      Badge: React.ComponentType<BadgeProps>;
+      KeyHint: React.ComponentType<KeyHintProps>;
+      Tooltip: React.ComponentType<TooltipProps>;
+      SlidePanel: React.ComponentType<SlidePanelProps>;
+      DataTable: React.ComponentType<DataTableProps>;
+      SectionHeader: React.ComponentType<SectionHeaderProps>;
     };
   };
 };
