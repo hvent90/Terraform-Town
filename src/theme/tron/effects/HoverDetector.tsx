@@ -6,15 +6,15 @@ import { useSceneContext } from '../../../shared/context';
 
 const _projVec = new THREE.Vector3();
 
-export function HoverDetector({ selected }: { selected: boolean }) {
-  const { hoverTRef, selectedTRef, onSelect, onDeselect, tooltipRef } = useSceneContext();
+export function HoverDetector() {
+  const { hoverTRef, selectedRef, selectedTRef, onSelect, onDeselect, tooltipRef } = useSceneContext();
   const hoveredRef = useRef(false);
 
   useFrame(({ camera, gl }, delta) => {
     const target = hoveredRef.current ? 1 : 0;
     hoverTRef.current += (target - hoverTRef.current) * Math.min(1, delta * 25);
 
-    const selectTarget = selected ? 1 : 0;
+    const selectTarget = selectedRef.current ? 1 : 0;
     selectedTRef.current += (selectTarget - selectedTRef.current) * Math.min(1, delta * 8);
 
     // Project cube top-right to screen space for tooltip

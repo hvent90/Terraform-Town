@@ -4,6 +4,7 @@ export type SceneContextType = {
   togglesRef: React.MutableRefObject<Record<string, boolean>>;
   hoverTRef: React.MutableRefObject<number>;
   selectTogglesRef: React.MutableRefObject<Record<string, boolean>>;
+  selectedRef: React.MutableRefObject<boolean>;
   selectedTRef: React.MutableRefObject<number>;
   onSelect: () => void;
   onDeselect: () => void;
