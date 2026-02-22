@@ -949,6 +949,175 @@ function ServiceInfoCard({ selected, onClose }: { selected: boolean; onClose: ()
   );
 }
 
+/* ─── Orbit Ring ─── */
+function OrbitRing() {
+  const { selectTogglesRef, selectedTRef } = useContext(CubeContext);
+  const ringRef = useRef<THREE.Mesh>(null);
+
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      uniform float uTime;
+      varying vec2 vUv;
+      void main() {
+        float dash = smoothstep(0.4, 0.5, fract(vUv.x * 20.0 - uTime * 0.5));
+        vec3 col = vec3(1.0, 0.55, 0.1);
+        float alpha = dash * uOpacity * 0.8;
+        gl_FragColor = vec4(col * 3.0, alpha);
+      }
+    `,
+  }), []);
+
+  useFrame(({ clock }) => {
+    const s = selectedTRef.current;
+    const t = selectTogglesRef.current.orbitRing ? s : 0;
+    material.uniforms.uOpacity.value = t;
+    material.uniforms.uTime.value = clock.getElapsedTime();
+    if (ringRef.current) {
+      ringRef.current.rotation.y = clock.getElapsedTime() * 0.4;
+    }
+  });
+
+  return (
+    <mesh ref={ringRef} position={[0, CUBE_Y, 0]} rotation={[Math.PI / 6, 0, Math.PI / 12]} material={material}>
+      <torusGeometry args={[CUBE_SIZE * 0.75, 0.008, 8, 64]} />
+    </mesh>
+  );
+}
+
+/* ─── Data Stream Particles ─── */
+function DataStreamParticles() {
+  const { selectTogglesRef, selectedTRef } = useContext(CubeContext);
+  const particleCount = 200;
+
+  const { positions, speeds } = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    const spd = new Float32Array(particleCount);
+    for (let i = 0; i < particleCount; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * CUBE_SIZE * 0.8;
+      pos[i * 3 + 1] = Math.random() * 1.5;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * CUBE_SIZE * 0.8;
+      spd[i] = 0.3 + Math.random() * 0.7;
+    }
+    return { positions: pos, speeds: spd };
+  }, []);
+
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      attribute float speed;
+      uniform float uTime;
+      uniform float uOpacity;
+      varying float vAlpha;
+      void main() {
+        vec3 pos = position;
+        float cycle = fract(pos.y / 1.5 + uTime * speed * 0.3);
+        pos.y = cycle * 1.5;
+        vAlpha = (1.0 - cycle) * uOpacity;
+        vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+        gl_PointSize = (1.0 - cycle) * 3.0 + 1.0;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      varying float vAlpha;
+      void main() {
+        float d = length(gl_PointCoord - 0.5) * 2.0;
+        float c = smoothstep(1.0, 0.3, d);
+        gl_FragColor = vec4(1.0, 0.6, 0.15, c * vAlpha * 0.6);
+      }
+    `,
+  }), []);
+
+  useFrame(({ clock }) => {
+    const s = selectedTRef.current;
+    const t = selectTogglesRef.current.dataStream ? s : 0;
+    material.uniforms.uOpacity.value = t;
+    material.uniforms.uTime.value = clock.getElapsedTime();
+  });
+
+  return (
+    <points material={material} position={[0, CUBE_Y + CUBE_SIZE * 0.5, 0]}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={particleCount} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-speed" count={particleCount} array={speeds} itemSize={1} />
+      </bufferGeometry>
+    </points>
+  );
+}
+
+/* ─── Ground Connection Beam ─── */
+function GroundConnectionBeam() {
+  const { selectTogglesRef, selectedTRef } = useContext(CubeContext);
+
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uOpacity: { value: 0 },
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      uniform float uTime;
+      varying vec2 vUv;
+      void main() {
+        float centerFade = 1.0 - pow(abs(vUv.x - 0.5) * 2.0, 2.0);
+        float heightFade = pow(1.0 - vUv.y, 1.5);
+        float pulse = 0.8 + 0.2 * sin(uTime * 2.0 + vUv.y * 8.0);
+        float alpha = centerFade * heightFade * pulse * uOpacity * 0.3;
+        vec3 col = vec3(1.0, 0.55, 0.1);
+        gl_FragColor = vec4(col * 2.0, alpha);
+      }
+    `,
+  }), []);
+
+  useFrame(({ clock }) => {
+    const s = selectedTRef.current;
+    const t = selectTogglesRef.current.groundBeam ? s : 0;
+    material.uniforms.uOpacity.value = t;
+    material.uniforms.uTime.value = clock.getElapsedTime();
+  });
+
+  const beamHeight = CUBE_Y;
+
+  return (
+    <mesh material={material} position={[0, beamHeight / 2, 0]}>
+      <planeGeometry args={[CUBE_SIZE * 0.3, beamHeight]} />
+    </mesh>
+  );
+}
+
 /* ─── Ground ─── */
 function Ground() {
   return (
@@ -1190,6 +1359,9 @@ export default function App() {
 
           <HoverDetector selected={selected} />
           <GlowingCube />
+          <OrbitRing />
+          <DataStreamParticles />
+          <GroundConnectionBeam />
           <Ground />
 
           <EffectComposer>
