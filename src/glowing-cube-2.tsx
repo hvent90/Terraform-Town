@@ -28,6 +28,9 @@ const COOL_WHITE = new THREE.Color(0xddeeff);
 const FACE_INNER_COOL = new THREE.Color(0x88bbff);
 const TRACE_COOL = new THREE.Color(0x4488ff);
 
+const STATUS_GREEN = new THREE.Color(0x44ff88);
+const STATUS_GREEN_BRIGHT = new THREE.Color(0x88ffbb);
+
 /* ─── Hover Effects System ─── */
 type EffectKey = 'edgeIntensify' | 'faceOpacity' | 'breathingAmp' | 'haloBloom' | 'lift' | 'particleAttract' | 'faceSeparation' | 'tracePulse' | 'colorTemp';
 
@@ -161,12 +164,13 @@ function HoverDetector({ selected }: { selected: boolean }) {
 
 /* ─── Glowing Cube ─── */
 function GlowingCube() {
-  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const { togglesRef, hoverTRef, selectTogglesRef, selectedTRef } = useContext(CubeContext);
   const groupRef = useRef<THREE.Group>(null);
   const facesRef = useRef<THREE.Group>(null);
   const edgesRef = useRef<THREE.LineSegments>(null);
   const haloRef = useRef<THREE.Sprite>(null);
   const haloMatRef = useRef<THREE.SpriteMaterial>(null);
+  const selectTimeRef = useRef(0);
 
   const tmpColor1 = useMemo(() => new THREE.Color(), []);
   const tmpColor2 = useMemo(() => new THREE.Color(), []);
@@ -184,6 +188,8 @@ function GlowingCube() {
       uTime: { value: 0 },
       uHover: { value: 0 },
       uSeparation: { value: 0 },
+      uHoloFlicker: { value: 0 },
+      uDataOverlay: { value: 0 },
     },
     vertexShader: `
       uniform float uSeparation;
@@ -206,6 +212,8 @@ function GlowingCube() {
       uniform vec3 uColorEdge;
       uniform float uTime;
       uniform float uHover;
+      uniform float uHoloFlicker;
+      uniform float uDataOverlay;
       varying vec3 vWorldPos;
       varying vec3 vWorldNormal;
       varying vec2 vUv;
@@ -229,6 +237,22 @@ function GlowingCube() {
         col = mix(col, uColorEdge, topBoost);
 
         baseAlpha *= 0.95 + 0.05 * sin(uTime * 1.5);
+
+        // Holographic flicker
+        float scanline = smoothstep(0.4, 0.5, fract(vWorldPos.y * 30.0 + uTime * 2.0)) * 0.3;
+        float flicker = step(0.97, fract(sin(uTime * 43.0) * 4375.5453)) * 0.4;
+        baseAlpha += (scanline + flicker) * uHoloFlicker;
+        col = mix(col, vec3(0.7, 0.9, 1.0), (scanline * 0.3 + flicker * 0.2) * uHoloFlicker);
+
+        // Data overlay grid
+        float gridX = smoothstep(0.9, 0.95, fract(vUv.x * 8.0));
+        float gridY = smoothstep(0.9, 0.95, fract(vUv.y * 8.0));
+        float grid = max(gridX, gridY);
+        float scrollData = step(0.6, fract(sin(floor(vUv.x * 8.0) * 17.0 + floor(vUv.y * 8.0 - uTime * 1.5) * 31.0) * 43758.5453));
+        float overlay = (grid * 0.4 + scrollData * 0.15) * uDataOverlay;
+        col = mix(col, vec3(1.0, 0.7, 0.2), overlay);
+        baseAlpha += overlay * 0.3;
+
         float maxAlpha = 0.85 + uHover * 0.15;
         gl_FragColor = vec4(col, clamp(baseAlpha, 0.0, maxAlpha));
       }
@@ -247,6 +271,8 @@ function GlowingCube() {
       uCubeY: { value: CUBE_Y },
       uCubeSize: { value: CUBE_SIZE },
       uHover: { value: 0 },
+      uSelectEdgePulse: { value: 0 },
+      uSelectTime: { value: 0 },
     },
     vertexShader: `
       varying float vHeight;
@@ -262,11 +288,16 @@ function GlowingCube() {
       uniform vec3 uColorBot;
       uniform vec3 uColorTop;
       uniform float uHover;
+      uniform float uSelectEdgePulse;
+      uniform float uSelectTime;
       varying float vHeight;
       void main() {
         vec3 col = mix(uColorBot, uColorTop, smoothstep(0.0, 1.0, vHeight));
         float alpha = 0.6 + vHeight * 0.4;
         alpha = alpha + uHover * (1.0 - alpha);
+        float pulse = exp(-mod(uSelectTime, 2.0) * 3.0) * uSelectEdgePulse;
+        col = mix(col, vec3(1.0, 0.95, 0.9), pulse * 0.6);
+        alpha = min(alpha + pulse * 0.3 + uSelectEdgePulse * 0.2, 1.0);
         gl_FragColor = vec4(col, alpha);
       }
     `,
@@ -274,10 +305,12 @@ function GlowingCube() {
 
   const haloTexture = useMemo(() => createHaloTexture(), []);
 
-  useFrame(({ clock, camera }) => {
+  useFrame(({ clock, camera }, delta) => {
     const t = clock.getElapsedTime();
     const h = hoverTRef.current;
     const toggles = togglesRef.current;
+    const selectToggles = selectTogglesRef.current;
+    const s = selectedTRef.current;
 
     // Face material uniforms
     faceMat.uniforms.uCameraPos.value.copy(camera.position);
@@ -298,6 +331,27 @@ function GlowingCube() {
     tmpColor1.lerp(WHITE_HOT, edgeT);
     edgesMat.uniforms.uColorBot.value.copy(tmpColor1);
     edgesMat.uniforms.uHover.value = edgeT;
+
+    // Holographic flicker (Task 6)
+    faceMat.uniforms.uHoloFlicker.value = selectToggles.holoFlicker ? s : 0;
+
+    // Face data overlay (Task 8)
+    faceMat.uniforms.uDataOverlay.value = selectToggles.faceDataOverlay ? s : 0;
+
+    // Edge highlight pulse (Task 7)
+    const edgePulseT = selectToggles.edgePulse ? s : 0;
+    if (edgePulseT > 0.01) selectTimeRef.current += delta;
+    else selectTimeRef.current = 0;
+    edgesMat.uniforms.uSelectEdgePulse.value = edgePulseT;
+    edgesMat.uniforms.uSelectTime.value = selectTimeRef.current;
+
+    // Status glow shift (Task 9)
+    const statusT = selectToggles.statusGlow ? s : 0;
+    if (statusT > 0.001) {
+      faceMat.uniforms.uColorInner.value.lerp(STATUS_GREEN, statusT * 0.4);
+      faceMat.uniforms.uColorEdge.value.lerp(STATUS_GREEN_BRIGHT, statusT * 0.3);
+      edgesMat.uniforms.uColorBot.value.lerp(STATUS_GREEN, statusT * 0.3);
+    }
 
     // Breathing animation
     const breathT = toggles.breathingAmp ? h : 0;
@@ -355,8 +409,9 @@ function GlowingCube() {
 
 /* ─── Trace Lines ─── */
 function TraceLines() {
-  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const { togglesRef, hoverTRef, selectTogglesRef, selectedTRef } = useContext(CubeContext);
   const pulseTimeRef = useRef(0);
+  const selectPulseTimeRef = useRef(0);
   const tmpColor = useMemo(() => new THREE.Color(), []);
 
   const material = useMemo(() => new THREE.ShaderMaterial({
@@ -366,6 +421,8 @@ function TraceLines() {
       uBorderDist: { value: CUBE_SIZE / 2 + 0.08 },
       uPulseAlpha: { value: 0 },
       uPulseTime: { value: 0 },
+      uSelectPulseAlpha: { value: 0 },
+      uSelectPulseTime: { value: 0 },
     },
     vertexShader: `
       varying vec3 vWorldPosition;
@@ -381,6 +438,8 @@ function TraceLines() {
       uniform float uBorderDist;
       uniform float uPulseAlpha;
       uniform float uPulseTime;
+      uniform float uSelectPulseAlpha;
+      uniform float uSelectPulseTime;
       varying vec3 vWorldPosition;
       void main() {
         float distFromBorder = max(abs(vWorldPosition.x), abs(vWorldPosition.z)) - uBorderDist;
@@ -389,6 +448,10 @@ function TraceLines() {
 
         float pulsePhase = fract(d * 1.5 - uPulseTime * 2.0);
         float pulse = exp(-pulsePhase * pulsePhase * 40.0) * uPulseAlpha;
+
+        float selectPhase = fract(d * 0.8 - uSelectPulseTime * 1.5);
+        float selectPulse = exp(-selectPhase * selectPhase * 20.0) * uSelectPulseAlpha;
+        pulse = max(pulse, selectPulse);
 
         float finalAlpha = max(alpha, pulse);
         float brightness = 4.0 + pulse * 6.0;
@@ -414,6 +477,13 @@ function TraceLines() {
     const colorT = toggles.colorTemp ? h : 0;
     tmpColor.copy(TRACE_WARM).lerp(TRACE_COOL, colorT);
     material.uniforms.color.value.copy(tmpColor);
+
+    // Trace activation (Task 10)
+    const selectTraceT = selectTogglesRef.current.traceActivation ? selectedTRef.current : 0;
+    if (selectTraceT > 0.01) selectPulseTimeRef.current += delta;
+    else selectPulseTimeRef.current = 0;
+    material.uniforms.uSelectPulseAlpha.value = selectTraceT;
+    material.uniforms.uSelectPulseTime.value = selectPulseTimeRef.current;
   });
 
   const half = CUBE_SIZE / 2 + 0.08;
