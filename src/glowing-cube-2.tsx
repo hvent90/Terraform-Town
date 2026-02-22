@@ -645,7 +645,9 @@ function ReflectiveGround() {
     });
     ref.rotation.x = -Math.PI / 2;
 
+    // @ts-ignore - Reflector.onBeforeRender has non-standard signature
     const origBeforeRender = ref.onBeforeRender;
+    // @ts-ignore
     ref.onBeforeRender = function (rend: any, scn: any, cam: any) {
       if (!cam.isOrthographicCamera) {
         origBeforeRender.call(this, rend, scn, cam);
@@ -755,9 +757,9 @@ function GroundParticles() {
   return (
     <points material={material}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={particleCount} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-size" count={particleCount} array={sizes} itemSize={1} />
-        <bufferAttribute attach="attributes-alpha" count={particleCount} array={alphas} itemSize={1} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
+        <bufferAttribute attach="attributes-alpha" args={[alphas, 1]} />
       </bufferGeometry>
     </points>
   );
@@ -1130,8 +1132,8 @@ function DataStreamParticles() {
   return (
     <points material={material} position={[0, CUBE_Y + CUBE_SIZE * 0.5, 0]}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={particleCount} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-speed" count={particleCount} array={speeds} itemSize={1} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-speed" args={[speeds, 1]} />
       </bufferGeometry>
     </points>
   );
@@ -1140,6 +1142,7 @@ function DataStreamParticles() {
 /* ─── Ground Connection Beam ─── */
 function GroundConnectionBeam() {
   const { selectTogglesRef, selectedTRef } = useContext(CubeContext);
+  const meshRef = useRef<THREE.Mesh>(null);
 
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
@@ -1177,12 +1180,15 @@ function GroundConnectionBeam() {
     const t = selectTogglesRef.current.groundBeam ? s : 0;
     material.uniforms.uOpacity.value = t;
     material.uniforms.uTime.value = clock.getElapsedTime();
+    // Hide from Reflector when inactive to avoid clip plane artifacts
+    if (meshRef.current) meshRef.current.visible = t > 0.01;
   });
 
-  const beamHeight = CUBE_Y;
+  // Raise beam above ground plane (y=0.02) to avoid Reflector clip plane intersection
+  const beamHeight = CUBE_Y - 0.02;
 
   return (
-    <mesh material={material} position={[0, beamHeight / 2, 0]}>
+    <mesh ref={meshRef} material={material} position={[0, 0.02 + beamHeight / 2, 0]} visible={false}>
       <planeGeometry args={[CUBE_SIZE * 0.3, beamHeight]} />
     </mesh>
   );

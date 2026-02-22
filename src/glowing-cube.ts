@@ -438,10 +438,10 @@ composer.addPass(new OutputPass());
 // The Reflector's oblique clip plane math assumes perspective projection.
 // For ortho cameras, intercept the internal render call and restore the
 // clean ortho projection matrix before the reflected scene is drawn.
-const origReflectorBeforeRender = ground.onBeforeRender;
-ground.onBeforeRender = function (rend: any, scn: any, cam: any) {
+const origReflectorBeforeRender = ground.onBeforeRender as Function;
+ground.onBeforeRender = function (rend: any, scn: any, cam: any, ...rest: any[]) {
   if (!cam.isOrthographicCamera) {
-    origReflectorBeforeRender.call(this, rend, scn, cam);
+    origReflectorBeforeRender.call(this, rend, scn, cam, ...rest);
     return;
   }
   const savedProjection = cam.projectionMatrix.clone();
@@ -450,7 +450,7 @@ ground.onBeforeRender = function (rend: any, scn: any, cam: any) {
     c.projectionMatrix.copy(savedProjection);
     origRender(s, c);
   };
-  origReflectorBeforeRender.call(this, rend, scn, cam);
+  origReflectorBeforeRender.call(this, rend, scn, cam, ...rest);
   rend.render = origRender;
 };
 
