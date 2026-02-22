@@ -14,6 +14,27 @@
 
 ---
 
+## Task List
+
+- [ ] **Task 1:** Foundation — shared types, constants, context (`src/shared/`)
+- [ ] **Task 2:** Theme system — types, ThemeProvider, GLSL declarations (`src/theme/`, `src/glsl.d.ts`)
+- [ ] **Task 3:** Extract Tron shaders to `.glsl` files (`src/theme/tron/shaders/`)
+- [ ] **Task 4:** Extract Tron colors + UI tokens (`src/theme/tron/colors.ts`)
+- [ ] **Task 5:** Extract Tron meshes — CubeMesh, ReflectiveGround (`src/theme/tron/meshes/`)
+- [ ] **Task 6:** Extract Tron effects — all 7 components (`src/theme/tron/effects/`)
+- [ ] **Task 7:** Extract Tron scene — SceneLights, PostProcessing (`src/theme/tron/`)
+- [ ] **Task 8:** UI component interfaces — prop type contracts (`src/ui/components/`)
+- [ ] **Task 9:** Tron UI components — themed implementations (`src/theme/tron/ui/`)
+- [ ] **Task 10:** UI features — zero-styling compositions (`src/ui/features/`)
+- [ ] **Task 11:** Resource data asset + Tron theme manifest (`src/resources/`, `src/theme/tron/index.ts`)
+- [ ] **Task 12:** Actors — ResourceActor, GroundActor (`src/actors/`)
+- [ ] **Task 13:** App.tsx + main.tsx — wire everything, update index.html
+- [ ] **Task 14:** Delete monolith, move assets, full verification
+
+> See detailed steps, file lists, and code for each task below.
+
+---
+
 ### Task 1: Foundation — Shared Types, Constants, Context
 
 Create the shared layer that everything else imports from.
