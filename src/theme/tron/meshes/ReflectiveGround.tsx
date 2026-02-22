@@ -32,8 +32,7 @@ export function ReflectiveGround() {
     });
     ref.rotation.x = -Math.PI / 2;
 
-    // @ts-ignore - Reflector.onBeforeRender has non-standard signature
-    const origBeforeRender = ref.onBeforeRender;
+    const origBeforeRender = ref.onBeforeRender as (renderer: any, scene: any, camera: any) => void;
 
     // Wrap origBeforeRender to hide objects flagged with excludeFromReflection
     const reflectionSafeRender = function (this: any, rend: any, scn: any, cam: any) {
