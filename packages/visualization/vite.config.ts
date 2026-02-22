@@ -4,9 +4,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./tests/setup.ts'],
+  server: {
+    allowedHosts: true,
+    hmr: {
+      host: '100.76.210.42',
+    },
   },
 });
