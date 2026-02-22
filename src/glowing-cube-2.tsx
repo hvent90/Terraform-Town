@@ -1,15 +1,18 @@
 import { createRoot } from 'react-dom/client';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, PerspectiveCamera, OrbitControls } from '@react-three/drei';
+import { OrthographicCamera, PerspectiveCamera, OrbitControls, Text } from '@react-three/drei';
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 
+// @ts-ignore
+import GEIST_PIXEL_GRID from './fonts/GeistPixel-Grid.ttf';
+
 const TRACE_COLOR = '#ff8800';
 const WHITE_HOT = new THREE.Color(0xffeedd);
 const CUBE_SIZE = 0.6;
-const CUBE_Y = 0.45;
+const CUBE_Y = CUBE_SIZE / 2;
 
 const faceConfigs: { rot: [number, number, number]; pos: [number, number, number] }[] = [
   { rot: [0, 0, 0],             pos: [0, 0, CUBE_SIZE / 2] },
@@ -105,7 +108,6 @@ function CubeFace({ rot, pos }: { rot: [number, number, number]; pos: [number, n
 function GlowingCube() {
   const facesRef = useRef<THREE.Group>(null);
   const edgesRef = useRef<THREE.LineSegments>(null);
-  const innerRef = useRef<THREE.Mesh>(null);
 
   const edgesGeo = useMemo(() =>
     new THREE.EdgesGeometry(new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE)), []);
@@ -149,7 +151,6 @@ function GlowingCube() {
     const b = 1 + Math.sin(t * 1.2) * 0.008;
     facesRef.current?.scale.setScalar(b);
     edgesRef.current?.scale.setScalar(b);
-    innerRef.current?.scale.setScalar(b);
   });
 
   return (
@@ -163,12 +164,6 @@ function GlowingCube() {
 
       {/* Edge lines */}
       <lineSegments ref={edgesRef} geometry={edgesGeo} material={edgesMat} position={[0, CUBE_Y, 0]} />
-
-      {/* Inner glow volume */}
-      <mesh ref={innerRef} position={[0, CUBE_Y, 0]}>
-        <boxGeometry args={[0.35, 0.35, 0.35]} />
-        <meshBasicMaterial color={0xffcc88} transparent opacity={0.15} />
-      </mesh>
 
       {/* Halo */}
       <sprite position={[0, CUBE_Y + 0.1, 0]} scale={[1.2, 1.2, 1]}>
@@ -189,7 +184,8 @@ function TraceLines() {
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {
       color: { value: new THREE.Color(TRACE_COLOR) },
-      fadeDistance: { value: 15.0 }
+      fadeDistance: { value: 7.5 },
+      uBorderDist: { value: CUBE_SIZE / 2 + 0.08 }
     },
     vertexShader: `
       varying vec3 vWorldPosition;
@@ -202,10 +198,11 @@ function TraceLines() {
     fragmentShader: `
       uniform vec3 color;
       uniform float fadeDistance;
+      uniform float uBorderDist;
       varying vec3 vWorldPosition;
       void main() {
-        float dist = length(vWorldPosition.xz);
-        float alpha = 1.0 - smoothstep(0.0, fadeDistance, dist);
+        float distFromBorder = max(abs(vWorldPosition.x), abs(vWorldPosition.z)) - uBorderDist;
+        float alpha = 1.0 - smoothstep(0.0, fadeDistance, max(distFromBorder, 0.0));
         gl_FragColor = vec4(color * 4.0, alpha);
       }
     `,
@@ -214,18 +211,58 @@ function TraceLines() {
     depthWrite: false
   }), []);
 
+  const half = CUBE_SIZE / 2 + 0.08;
+  const borderLen = CUBE_SIZE + 0.16 + 0.02;
+
   return (
-      <group position={[0, 0.01, 0]}>
-  {/* Z-axis line */}
-  <mesh material={material} rotation={[-Math.PI / 2, 0, 0]}>
-  <planeGeometry args={[0.02, 30]} />
-  </mesh>
-  {/* X-axis line */}
-  <mesh material={material} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
-  <planeGeometry args={[0.02, 30]} />
-  </mesh>
-  </group>
-);
+    <group position={[0, 0.01, 0]}>
+      {/* Z-axis line (positive) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, half + 3.75]}>
+        <planeGeometry args={[0.02, 7.5]} />
+      </mesh>
+      {/* Z-axis line (negative) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -(half + 3.75)]}>
+        <planeGeometry args={[0.02, 7.5]} />
+      </mesh>
+      {/* X-axis line (positive) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[half + 3.75, 0, 0]}>
+        <planeGeometry args={[0.02, 7.5]} />
+      </mesh>
+      {/* X-axis line (negative) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[-(half + 3.75), 0, 0]}>
+        <planeGeometry args={[0.02, 7.5]} />
+      </mesh>
+      {/* Front border (z+) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, half]}>
+        <planeGeometry args={[borderLen, 0.02]} />
+      </mesh>
+      {/* Back border (z-) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -half]}>
+        <planeGeometry args={[borderLen, 0.02]} />
+      </mesh>
+      {/* Right border (x+) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[half, 0, 0]}>
+        <planeGeometry args={[borderLen, 0.02]} />
+      </mesh>
+      {/* Left border (x-) */}
+      <mesh material={material} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[-half, 0, 0]}>
+        <planeGeometry args={[borderLen, 0.02]} />
+      </mesh>
+      {/* EC2 label on right trace line */}
+      <Text
+        font={GEIST_PIXEL_GRID}
+        fontSize={0.45}
+        position={[0, -0.05, -(half + 1.2)]}
+        rotation={[0, Math.PI / 2, 0]}
+        anchorX="center"
+        anchorY="bottom"
+        color={TRACE_COLOR}
+      >
+        EC2
+        <meshBasicMaterial color={TRACE_COLOR} transparent opacity={0.9} blending={THREE.AdditiveBlending} />
+      </Text>
+    </group>
+  );
 }
 
 const AMBER = new THREE.Color(0xff8822);
@@ -275,7 +312,7 @@ const waterShader = {
 
     void main() {
       float dist = length(vWorldPos.xz);
-      float distFactor = smoothstep(0.2, 2.5, dist);
+      float distFactor = smoothstep(0.2, 1.2, dist);
 
       float t = uTime * 0.6;
       vec2 turb = vec2(
@@ -311,8 +348,8 @@ const waterShader = {
       col += texture2DProj(tDiffuse, vec4(uv.xy + vec2(blur, blur) * 0.7, uv.zw));
       col /= 10.0;
 
-      float falloff = exp(-dist * dist * 0.35);
-      col.rgb *= falloff * 0.7;
+      float falloff = exp(-dist * dist * 1.2);
+      col.rgb *= falloff * 0.85;
 
       gl_FragColor = col;
     }
@@ -359,44 +396,6 @@ function ReflectiveGround() {
   });
 
   return <primitive object={reflector} />;
-}
-
-function LightPool() {
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: {
-      uColor: { value: AMBER },
-      uColorBright: { value: new THREE.Color(0xffcc88) },
-    },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
-    `,
-    fragmentShader: `
-      uniform vec3 uColor;
-      uniform vec3 uColorBright;
-      varying vec2 vUv;
-      void main() {
-        vec2 c = (vUv - 0.5) * 2.0;
-        float r = length(c);
-        vec2 world = c * 8.0;
-        float boxDist = max(abs(world.x), abs(world.y));
-        float coreGlow = exp(-pow(max(boxDist - 0.3, 0.0), 2.0) * 120.0) * 0.3;
-        float outerGlow = exp(-r * r * 18.0) * 0.06;
-        float intensity = coreGlow + outerGlow;
-        vec3 col = mix(uColor, uColorBright, coreGlow / max(intensity, 0.001));
-        gl_FragColor = vec4(col, intensity);
-      }
-    `,
-  }), []);
-
-  return (
-    <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
-      <planeGeometry args={[16, 16]} />
-    </mesh>
-  );
 }
 
 function GroundParticles() {
@@ -468,11 +467,49 @@ function GroundParticles() {
   );
 }
 
+function GroundLightPool() {
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uColor: { value: AMBER },
+      uColorBright: { value: new THREE.Color(0xffcc88) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      uniform vec3 uColorBright;
+      varying vec2 vUv;
+      void main() {
+        vec2 c = (vUv - 0.5) * 2.0;
+        float r = length(c);
+        vec2 world = c * 8.0;
+        float boxDist = max(abs(world.x), abs(world.y));
+        float coreGlow = exp(-pow(max(boxDist - 0.3, 0.0), 2.0) * 120.0) * 0.3;
+        float outerGlow = exp(-r * r * 18.0) * 0.06;
+        float intensity = coreGlow + outerGlow;
+        vec3 col = mix(uColor, uColorBright, coreGlow / max(intensity, 0.001));
+        gl_FragColor = vec4(col, intensity);
+      }
+    `,
+  }), []);
+
+  return (
+    <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
+      <planeGeometry args={[16, 16]} />
+    </mesh>
+  );
+}
+
 function Ground() {
   return (
     <group>
       <ReflectiveGround />
-      <LightPool />
+      <GroundLightPool />
       <GroundParticles />
       <TraceLines />
     </group>
@@ -480,7 +517,7 @@ function Ground() {
 }
 
 export default function App() {
-  const [isOrtho, setIsOrtho] = useState(false);
+  const [isOrtho, setIsOrtho] = useState(true);
 
   const toggle = useCallback(() => setIsOrtho(prev => !prev), []);
 
