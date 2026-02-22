@@ -970,7 +970,6 @@ function ControlPanel({ toggles, onToggle }: {
 
   return (
     <div style={{
-      position: 'fixed', top: 16, left: 16, zIndex: 1000,
       background: 'rgba(10, 8, 5, 0.85)',
       border: '1px solid rgba(255, 150, 50, 0.25)',
       borderRadius: 8,
@@ -1011,6 +1010,84 @@ function ControlPanel({ toggles, onToggle }: {
                 transition: 'opacity 0.2s',
               }}>
                 {EFFECT_LABELS[key]}
+              </span>
+              <div
+                onClick={() => onToggle(key)}
+                style={{
+                  width: 32, height: 16, borderRadius: 8,
+                  background: toggles[key] ? 'rgba(255, 136, 0, 0.4)' : 'rgba(255, 255, 255, 0.08)',
+                  border: `1px solid ${toggles[key] ? 'rgba(255, 136, 0, 0.6)' : 'rgba(255, 255, 255, 0.15)'}`,
+                  position: 'relative', cursor: 'pointer',
+                  transition: 'background 0.2s, border-color 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  width: 10, height: 10, borderRadius: 5,
+                  background: toggles[key] ? '#ff8800' : 'rgba(255, 255, 255, 0.25)',
+                  position: 'absolute', top: 2,
+                  left: toggles[key] ? 19 : 2,
+                  transition: 'left 0.2s ease, background 0.2s',
+                  boxShadow: toggles[key] ? '0 0 6px rgba(255, 136, 0, 0.5)' : 'none',
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Selected Control Panel ─── */
+function SelectedControlPanel({ toggles, onToggle }: {
+  toggles: Record<SelectEffectKey, boolean>;
+  onToggle: (key: SelectEffectKey) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <div style={{
+      background: 'rgba(10, 8, 5, 0.85)',
+      border: '1px solid rgba(255, 150, 50, 0.25)',
+      borderRadius: 8,
+      padding: collapsed ? '8px 14px' : '12px 16px',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      color: 'rgba(255, 200, 140, 0.7)',
+      backdropFilter: 'blur(10px)',
+      userSelect: 'none',
+      minWidth: 180,
+    }}>
+      {/* Header */}
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+          marginBottom: collapsed ? 0 : 10,
+        }}
+      >
+        <span style={{
+          display: 'inline-block',
+          transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s ease',
+          fontSize: 10,
+        }}>&#9660;</span>
+        <span style={{ fontWeight: 'bold', letterSpacing: '0.05em' }}>Selected Effects</span>
+      </div>
+
+      {/* Toggle list */}
+      {!collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {ALL_SELECT_EFFECTS.map(key => (
+            <div key={key} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            }}>
+              <span style={{
+                opacity: toggles[key] ? 1 : 0.5,
+                transition: 'opacity 0.2s',
+              }}>
+                {SELECT_EFFECT_LABELS[key]}
               </span>
               <div
                 onClick={() => onToggle(key)}
@@ -1159,7 +1236,13 @@ export default function App() {
         </span>
       </div>
 
-      <ControlPanel toggles={toggles} onToggle={toggleEffect} />
+      <div style={{
+        position: 'fixed', top: 16, left: 16, zIndex: 1000,
+        display: 'flex', flexDirection: 'column', gap: 8,
+      }}>
+        <ControlPanel toggles={toggles} onToggle={toggleEffect} />
+        <SelectedControlPanel toggles={selectToggles} onToggle={toggleSelectEffect} />
+      </div>
       <ServiceInfoCard selected={selected} onClose={onDeselect} />
 
       <button
