@@ -7,7 +7,6 @@ import { defaultTheme } from './themes/default';
 import { ResourceFactory } from './resources/ResourceFactory';
 import { Animator } from './animations/Animator';
 import { ForceLayout } from './layout/ForceLayout';
-import { StateSync } from './state/StateSync';
 import { SelectionManager } from './interactions/Selection';
 
 export class Visualization {
@@ -25,7 +24,6 @@ export class Visualization {
   private resourceFactory: ResourceFactory;
   private animator: Animator;
   private layout: ForceLayout;
-  private stateSync: StateSync;
   private selection: SelectionManager;
 
   private resources: Map<string, THREE.Object3D> = new Map();
@@ -53,7 +51,6 @@ export class Visualization {
     this.resourceFactory = new ResourceFactory(this.theme);
     this.animator = new Animator((id) => this.resources.get(id));
     this.layout = new ForceLayout();
-    this.stateSync = new StateSync();
     this.selection = new SelectionManager(this.activeCamera, this.scene);
 
     this.init();
@@ -68,7 +65,7 @@ export class Visualization {
   private init(): void {
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(this.theme.background, 1);
+    this.renderer.setClearColor(new THREE.Color(this.theme.background), 1);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.appendChild(this.renderer.domElement);
@@ -333,7 +330,6 @@ export class Visualization {
 
   dispose(): void {
     if (this.animationId) cancelAnimationFrame(this.animationId);
-    this.postProcessing.dispose();
     this.renderer.dispose();
     this.controls.dispose();
     this.container.removeChild(this.renderer.domElement);
