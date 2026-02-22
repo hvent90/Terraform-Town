@@ -4,16 +4,84 @@ import { OrthographicCamera, PerspectiveCamera, OrbitControls, Text } from '@rea
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
-import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import { useMemo, useRef, useState, useEffect, useCallback, createContext, useContext } from 'react';
 
 // @ts-ignore
 import GEIST_PIXEL_GRID from './fonts/GeistPixel-Grid.ttf';
 
+/* ─── Constants ─── */
 const TRACE_COLOR = '#ff8800';
 const WHITE_HOT = new THREE.Color(0xffeedd);
 const CUBE_SIZE = 0.6;
 const CUBE_Y = CUBE_SIZE / 2;
+const AMBER = new THREE.Color(0xff8822);
+const AMBER_WARM = new THREE.Color(0xffaa44);
+const FACE_INNER_WARM = new THREE.Color(0xffbb55);
+const TRACE_WARM = new THREE.Color(TRACE_COLOR);
+const HALO_WARM = new THREE.Color(0xffaa55);
+const LIGHT_POOL_BRIGHT = new THREE.Color(0xffcc88);
 
+// Cool targets for color temp shift
+const COOL_BLUE = new THREE.Color(0x4488ff);
+const COOL_BLUE_BRIGHT = new THREE.Color(0x88bbff);
+const COOL_WHITE = new THREE.Color(0xddeeff);
+const FACE_INNER_COOL = new THREE.Color(0x88bbff);
+const TRACE_COOL = new THREE.Color(0x4488ff);
+
+/* ─── Hover Effects System ─── */
+type EffectKey = 'edgeIntensify' | 'faceOpacity' | 'breathingAmp' | 'haloBloom' | 'lift' | 'particleAttract' | 'faceSeparation' | 'tracePulse' | 'colorTemp';
+
+const EFFECT_LABELS: Record<EffectKey, string> = {
+  edgeIntensify: 'Edge Intensify',
+  faceOpacity: 'Face Opacity',
+  breathingAmp: 'Breathing Amp',
+  haloBloom: 'Halo Bloom',
+  lift: 'Lift',
+  particleAttract: 'Particle Attract',
+  faceSeparation: 'Face Separation',
+  tracePulse: 'Trace Pulse',
+  colorTemp: 'Color Temp Shift',
+};
+
+const ALL_EFFECTS: EffectKey[] = Object.keys(EFFECT_LABELS) as EffectKey[];
+
+const DEFAULT_TOGGLES: Record<EffectKey, boolean> = Object.fromEntries(
+  ALL_EFFECTS.map(k => [k, false])
+) as Record<EffectKey, boolean>;
+
+/* ─── Selected Effects System ─── */
+type SelectEffectKey = 'orbitRing' | 'dataStream' | 'groundBeam' | 'holoFlicker' | 'edgePulse' | 'faceDataOverlay' | 'statusGlow' | 'traceActivation';
+
+const SELECT_EFFECT_LABELS: Record<SelectEffectKey, string> = {
+  orbitRing: 'Orbit Ring',
+  dataStream: 'Data Stream',
+  groundBeam: 'Ground Beam',
+  holoFlicker: 'Holo Flicker',
+  edgePulse: 'Edge Pulse',
+  faceDataOverlay: 'Face Data Overlay',
+  statusGlow: 'Status Glow',
+  traceActivation: 'Trace Activation',
+};
+
+const ALL_SELECT_EFFECTS: SelectEffectKey[] = Object.keys(SELECT_EFFECT_LABELS) as SelectEffectKey[];
+
+const DEFAULT_SELECT_TOGGLES: Record<SelectEffectKey, boolean> = Object.fromEntries(
+  ALL_SELECT_EFFECTS.map(k => [k, false])
+) as Record<SelectEffectKey, boolean>;
+
+type CubeContextType = {
+  togglesRef: React.MutableRefObject<Record<EffectKey, boolean>>;
+  hoverTRef: React.MutableRefObject<number>;
+  selectTogglesRef: React.MutableRefObject<Record<SelectEffectKey, boolean>>;
+  selectedTRef: React.MutableRefObject<number>;
+  onSelect: () => void;
+  onDeselect: () => void;
+  tooltipRef: React.RefObject<HTMLDivElement | null>;
+};
+
+const CubeContext = createContext<CubeContextType>(null!);
+
+/* ─── Face Configs ─── */
 const faceConfigs: { rot: [number, number, number]; pos: [number, number, number] }[] = [
   { rot: [0, 0, 0],             pos: [0, 0, CUBE_SIZE / 2] },
   { rot: [0, Math.PI, 0],       pos: [0, 0, -CUBE_SIZE / 2] },
@@ -23,6 +91,7 @@ const faceConfigs: { rot: [number, number, number]; pos: [number, number, number
   { rot: [Math.PI / 2, 0, 0],   pos: [0, -CUBE_SIZE / 2, 0] },
 ];
 
+/* ─── Halo Texture ─── */
 function createHaloTexture() {
   const size = 512;
   const canvas = document.createElement('canvas');
@@ -39,26 +108,95 @@ function createHaloTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-function CubeFace({ rot, pos }: { rot: [number, number, number]; pos: [number, number, number] }) {
-  const material = useMemo(() => new THREE.ShaderMaterial({
+/* ─── CubeFace (shared material) ─── */
+function CubeFace({ rot, pos, material }: { rot: [number, number, number]; pos: [number, number, number]; material: THREE.ShaderMaterial }) {
+  return (
+    <mesh material={material} position={pos} rotation={rot}>
+      <planeGeometry args={[CUBE_SIZE, CUBE_SIZE]} />
+    </mesh>
+  );
+}
+
+/* ─── Hover Detection ─── */
+const _projVec = new THREE.Vector3();
+
+function HoverDetector({ selected }: { selected: boolean }) {
+  const { hoverTRef, selectedTRef, onSelect, onDeselect, tooltipRef } = useContext(CubeContext);
+  const hoveredRef = useRef(false);
+
+  useFrame(({ camera, gl }, delta) => {
+    const target = hoveredRef.current ? 1 : 0;
+    hoverTRef.current += (target - hoverTRef.current) * Math.min(1, delta * 25);
+
+    const selectTarget = selected ? 1 : 0;
+    selectedTRef.current += (selectTarget - selectedTRef.current) * Math.min(1, delta * 8);
+
+    // Project cube top-right to screen space for tooltip
+    if (tooltipRef.current) {
+      const t = hoverTRef.current;
+      _projVec.set(CUBE_SIZE * 0.5, CUBE_Y + CUBE_SIZE * 0.5, 0).project(camera);
+      const canvas = gl.domElement;
+      const x = (_projVec.x * 0.5 + 0.5) * canvas.clientWidth;
+      const y = (-_projVec.y * 0.5 + 0.5) * canvas.clientHeight;
+      tooltipRef.current.style.left = `${x + 16}px`;
+      tooltipRef.current.style.top = `${y - 12}px`;
+      tooltipRef.current.style.opacity = String(t);
+      tooltipRef.current.style.transform = `translateY(${(1 - t) * 6}px)`;
+    }
+  });
+
+  return (
+    <mesh
+      onPointerEnter={() => { hoveredRef.current = true; }}
+      onPointerLeave={() => { hoveredRef.current = false; }}
+      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      onPointerMissed={() => onDeselect()}
+      position={[0, CUBE_Y, 0]}
+    >
+      <boxGeometry args={[CUBE_SIZE * 1.5, CUBE_SIZE * 1.5, CUBE_SIZE * 1.5]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
+
+/* ─── Glowing Cube ─── */
+function GlowingCube() {
+  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const groupRef = useRef<THREE.Group>(null);
+  const facesRef = useRef<THREE.Group>(null);
+  const edgesRef = useRef<THREE.LineSegments>(null);
+  const haloRef = useRef<THREE.Sprite>(null);
+  const haloMatRef = useRef<THREE.SpriteMaterial>(null);
+
+  const tmpColor1 = useMemo(() => new THREE.Color(), []);
+  const tmpColor2 = useMemo(() => new THREE.Color(), []);
+  const tmpColor3 = useMemo(() => new THREE.Color(), []);
+
+  // Face material (shared across all 6 faces)
+  const faceMat = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
     uniforms: {
       uCameraPos: { value: new THREE.Vector3() },
-      uColorInner: { value: new THREE.Color(0xffbb55) },
-      uColorEdge: { value: WHITE_HOT },
+      uColorInner: { value: FACE_INNER_WARM.clone() },
+      uColorEdge: { value: WHITE_HOT.clone() },
       uTime: { value: 0 },
+      uHover: { value: 0 },
+      uSeparation: { value: 0 },
     },
     vertexShader: `
+      uniform float uSeparation;
       varying vec3 vWorldPos;
       varying vec3 vWorldNormal;
       varying vec2 vUv;
       void main() {
         vUv = uv;
+        vec3 worldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
         vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        worldPos.xyz += worldNormal * uSeparation;
         vWorldPos = worldPos.xyz;
-        vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+        vWorldNormal = worldNormal;
         gl_Position = projectionMatrix * viewMatrix * worldPos;
       }
     `,
@@ -67,6 +205,7 @@ function CubeFace({ rot, pos }: { rot: [number, number, number]; pos: [number, n
       uniform vec3 uColorInner;
       uniform vec3 uColorEdge;
       uniform float uTime;
+      uniform float uHover;
       varying vec3 vWorldPos;
       varying vec3 vWorldNormal;
       varying vec2 vUv;
@@ -80,34 +219,21 @@ function CubeFace({ rot, pos }: { rot: [number, number, number]; pos: [number, n
         edgeFactor = smoothstep(0.7, 1.0, edgeFactor);
 
         float baseAlpha = 0.15 + fresnel * 0.45 + edgeFactor * 0.5;
+        baseAlpha += uHover * 0.2;
 
         vec3 col = mix(uColorInner, uColorEdge, fresnel * 0.6 + edgeFactor * 0.4);
+        col = mix(col, uColorEdge, uHover * 0.3);
 
         float topBoost = smoothstep(0.3, 1.0, vWorldNormal.y) * 0.2;
         baseAlpha += topBoost;
         col = mix(col, uColorEdge, topBoost);
 
         baseAlpha *= 0.95 + 0.05 * sin(uTime * 1.5);
-        gl_FragColor = vec4(col, clamp(baseAlpha, 0.0, 0.85));
+        float maxAlpha = 0.85 + uHover * 0.15;
+        gl_FragColor = vec4(col, clamp(baseAlpha, 0.0, maxAlpha));
       }
     `,
   }), []);
-
-  useFrame(({ clock, camera }) => {
-    material.uniforms.uCameraPos.value.copy(camera.position);
-    material.uniforms.uTime.value = clock.getElapsedTime();
-  });
-
-  return (
-    <mesh material={material} position={pos} rotation={rot}>
-      <planeGeometry args={[CUBE_SIZE, CUBE_SIZE]} />
-    </mesh>
-  );
-}
-
-function GlowingCube() {
-  const facesRef = useRef<THREE.Group>(null);
-  const edgesRef = useRef<THREE.LineSegments>(null);
 
   const edgesGeo = useMemo(() =>
     new THREE.EdgesGeometry(new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE)), []);
@@ -116,10 +242,11 @@ function GlowingCube() {
     transparent: true,
     depthWrite: false,
     uniforms: {
-      uColorBot: { value: AMBER_WARM },
-      uColorTop: { value: WHITE_HOT },
+      uColorBot: { value: AMBER_WARM.clone() },
+      uColorTop: { value: WHITE_HOT.clone() },
       uCubeY: { value: CUBE_Y },
       uCubeSize: { value: CUBE_SIZE },
+      uHover: { value: 0 },
     },
     vertexShader: `
       varying float vHeight;
@@ -134,10 +261,12 @@ function GlowingCube() {
     fragmentShader: `
       uniform vec3 uColorBot;
       uniform vec3 uColorTop;
+      uniform float uHover;
       varying float vHeight;
       void main() {
         vec3 col = mix(uColorBot, uColorTop, smoothstep(0.0, 1.0, vHeight));
         float alpha = 0.6 + vHeight * 0.4;
+        alpha = alpha + uHover * (1.0 - alpha);
         gl_FragColor = vec4(col, alpha);
       }
     `,
@@ -145,20 +274,63 @@ function GlowingCube() {
 
   const haloTexture = useMemo(() => createHaloTexture(), []);
 
-  // Breathing animation
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const t = clock.getElapsedTime();
-    const b = 1 + Math.sin(t * 1.2) * 0.008;
+    const h = hoverTRef.current;
+    const toggles = togglesRef.current;
+
+    // Face material uniforms
+    faceMat.uniforms.uCameraPos.value.copy(camera.position);
+    faceMat.uniforms.uTime.value = t;
+    faceMat.uniforms.uHover.value = toggles.faceOpacity ? h : 0;
+    faceMat.uniforms.uSeparation.value = (toggles.faceSeparation ? h : 0) * 0.08;
+
+    // Color temp - face colors
+    const colorT = toggles.colorTemp ? h : 0;
+    tmpColor1.copy(FACE_INNER_WARM).lerp(FACE_INNER_COOL, colorT);
+    faceMat.uniforms.uColorInner.value.copy(tmpColor1);
+    tmpColor2.copy(WHITE_HOT).lerp(COOL_WHITE, colorT);
+    faceMat.uniforms.uColorEdge.value.copy(tmpColor2);
+
+    // Edge material - color temp first, then edge intensification
+    const edgeT = toggles.edgeIntensify ? h : 0;
+    tmpColor1.copy(AMBER_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
+    tmpColor1.lerp(WHITE_HOT, edgeT);
+    edgesMat.uniforms.uColorBot.value.copy(tmpColor1);
+    edgesMat.uniforms.uHover.value = edgeT;
+
+    // Breathing animation
+    const breathT = toggles.breathingAmp ? h : 0;
+    const breathAmp = 0.008 + breathT * 0.022;
+    const b = 1 + Math.sin(t * 1.2) * breathAmp;
     facesRef.current?.scale.setScalar(b);
     edgesRef.current?.scale.setScalar(b);
+
+    // Lift
+    const liftT = toggles.lift ? h : 0;
+    if (groupRef.current) {
+      groupRef.current.position.y = liftT * 0.1;
+    }
+
+    // Halo bloom
+    const haloT = toggles.haloBloom ? h : 0;
+    if (haloRef.current) {
+      const s = 1.2 + haloT * 0.6;
+      haloRef.current.scale.set(s, s, 1);
+    }
+    if (haloMatRef.current) {
+      haloMatRef.current.opacity = 0.15 + haloT * 0.25;
+      tmpColor3.copy(HALO_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
+      haloMatRef.current.color.copy(tmpColor3);
+    }
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       {/* Frosted glass faces */}
       <group ref={facesRef} position={[0, CUBE_Y, 0]}>
         {faceConfigs.map((cfg, i) => (
-          <CubeFace key={i} rot={cfg.rot} pos={cfg.pos} />
+          <CubeFace key={i} rot={cfg.rot} pos={cfg.pos} material={faceMat} />
         ))}
       </group>
 
@@ -166,8 +338,9 @@ function GlowingCube() {
       <lineSegments ref={edgesRef} geometry={edgesGeo} material={edgesMat} position={[0, CUBE_Y, 0]} />
 
       {/* Halo */}
-      <sprite position={[0, CUBE_Y + 0.1, 0]} scale={[1.2, 1.2, 1]}>
+      <sprite ref={haloRef} position={[0, CUBE_Y + 0.1, 0]} scale={[1.2, 1.2, 1]}>
         <spriteMaterial
+          ref={haloMatRef}
           map={haloTexture}
           color={0xffaa55}
           transparent
@@ -180,12 +353,19 @@ function GlowingCube() {
   );
 }
 
+/* ─── Trace Lines ─── */
 function TraceLines() {
+  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const pulseTimeRef = useRef(0);
+  const tmpColor = useMemo(() => new THREE.Color(), []);
+
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {
       color: { value: new THREE.Color(TRACE_COLOR) },
       fadeDistance: { value: 7.5 },
-      uBorderDist: { value: CUBE_SIZE / 2 + 0.08 }
+      uBorderDist: { value: CUBE_SIZE / 2 + 0.08 },
+      uPulseAlpha: { value: 0 },
+      uPulseTime: { value: 0 },
     },
     vertexShader: `
       varying vec3 vWorldPosition;
@@ -199,17 +379,42 @@ function TraceLines() {
       uniform vec3 color;
       uniform float fadeDistance;
       uniform float uBorderDist;
+      uniform float uPulseAlpha;
+      uniform float uPulseTime;
       varying vec3 vWorldPosition;
       void main() {
         float distFromBorder = max(abs(vWorldPosition.x), abs(vWorldPosition.z)) - uBorderDist;
-        float alpha = 1.0 - smoothstep(0.0, fadeDistance, max(distFromBorder, 0.0));
-        gl_FragColor = vec4(color * 4.0, alpha);
+        float d = max(distFromBorder, 0.0);
+        float alpha = 1.0 - smoothstep(0.0, fadeDistance, d);
+
+        float pulsePhase = fract(d * 1.5 - uPulseTime * 2.0);
+        float pulse = exp(-pulsePhase * pulsePhase * 40.0) * uPulseAlpha;
+
+        float finalAlpha = max(alpha, pulse);
+        float brightness = 4.0 + pulse * 6.0;
+        gl_FragColor = vec4(color * brightness, finalAlpha);
       }
     `,
     transparent: true,
     blending: THREE.AdditiveBlending,
     depthWrite: false
   }), []);
+
+  useFrame((_, delta) => {
+    const toggles = togglesRef.current;
+    const h = hoverTRef.current;
+
+    // Pulse
+    const pulseT = toggles.tracePulse ? h : 0;
+    if (pulseT > 0.01) pulseTimeRef.current += delta * pulseT;
+    material.uniforms.uPulseAlpha.value = pulseT;
+    material.uniforms.uPulseTime.value = pulseTimeRef.current;
+
+    // Color temp
+    const colorT = toggles.colorTemp ? h : 0;
+    tmpColor.copy(TRACE_WARM).lerp(TRACE_COOL, colorT);
+    material.uniforms.color.value.copy(tmpColor);
+  });
 
   const half = CUBE_SIZE / 2 + 0.08;
   const borderLen = CUBE_SIZE + 0.16 + 0.02;
@@ -248,7 +453,7 @@ function TraceLines() {
       <mesh material={material} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[-half, 0, 0]}>
         <planeGeometry args={[borderLen, 0.02]} />
       </mesh>
-      {/* EC2 label on right trace line */}
+      {/* EC2 label */}
       <Text
         font={GEIST_PIXEL_GRID}
         fontSize={0.45}
@@ -265,9 +470,7 @@ function TraceLines() {
   );
 }
 
-const AMBER = new THREE.Color(0xff8822);
-const AMBER_WARM = new THREE.Color(0xffaa44);
-
+/* ─── Water Shader ─── */
 const waterShader = {
   name: 'WaterReflector',
   uniforms: {
@@ -356,6 +559,7 @@ const waterShader = {
   `,
 };
 
+/* ─── Reflective Ground ─── */
 function ReflectiveGround() {
   const { size } = useThree();
   const dpr = Math.min(window.devicePixelRatio, 2);
@@ -371,7 +575,6 @@ function ReflectiveGround() {
     });
     ref.rotation.x = -Math.PI / 2;
 
-    // Fix for orthographic cameras
     const origBeforeRender = ref.onBeforeRender;
     ref.onBeforeRender = function (rend: any, scn: any, cam: any) {
       if (!cam.isOrthographicCamera) {
@@ -398,7 +601,10 @@ function ReflectiveGround() {
   return <primitive object={reflector} />;
 }
 
+/* ─── Ground Particles ─── */
 function GroundParticles() {
+  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const tmpColor = useMemo(() => new THREE.Color(), []);
   const particleCount = 3000;
 
   const { positions, sizes, alphas } = useMemo(() => {
@@ -422,17 +628,26 @@ function GroundParticles() {
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    uniforms: { uColor: { value: AMBER_WARM }, uTime: { value: 0 }, uZoom: { value: 80.0 } },
+    uniforms: {
+      uColor: { value: AMBER_WARM.clone() },
+      uTime: { value: 0 },
+      uZoom: { value: 80.0 },
+      uHover: { value: 0 },
+    },
     vertexShader: `
       attribute float size;
       attribute float alpha;
       varying float vAlpha;
       uniform float uTime;
       uniform float uZoom;
+      uniform float uHover;
       void main() {
         vAlpha = alpha;
         vec3 pos = position;
-        pos.y += sin(uTime * 1.5 + length(pos.xz) * 4.0) * 0.002;
+        float dist = length(pos.xz);
+        pos.xz *= 1.0 - uHover * 0.4;
+        pos.y += sin(uTime * 1.5 + dist * 4.0) * 0.002;
+        pos.y += uHover * 0.03 * sin(uTime * 3.0 + dist * 6.0);
         vec4 mv = modelViewMatrix * vec4(pos, 1.0);
         gl_PointSize = size * uZoom * 0.04;
         gl_Position = projectionMatrix * mv;
@@ -450,10 +665,21 @@ function GroundParticles() {
   }), []);
 
   useFrame(({ clock, camera }) => {
+    const toggles = togglesRef.current;
+    const h = hoverTRef.current;
+
     material.uniforms.uTime.value = clock.getElapsedTime();
     if ((camera as THREE.OrthographicCamera).zoom) {
       material.uniforms.uZoom.value = (camera as THREE.OrthographicCamera).zoom;
     }
+
+    // Particle attraction
+    material.uniforms.uHover.value = toggles.particleAttract ? h : 0;
+
+    // Color temp
+    const colorT = toggles.colorTemp ? h : 0;
+    tmpColor.copy(AMBER_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
+    material.uniforms.uColor.value.copy(tmpColor);
   });
 
   return (
@@ -467,14 +693,19 @@ function GroundParticles() {
   );
 }
 
+/* ─── Ground Light Pool ─── */
 function GroundLightPool() {
+  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const tmpColor1 = useMemo(() => new THREE.Color(), []);
+  const tmpColor2 = useMemo(() => new THREE.Color(), []);
+
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
-      uColor: { value: AMBER },
-      uColorBright: { value: new THREE.Color(0xffcc88) },
+      uColor: { value: AMBER.clone() },
+      uColorBright: { value: LIGHT_POOL_BRIGHT.clone() },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -498,6 +729,14 @@ function GroundLightPool() {
     `,
   }), []);
 
+  useFrame(() => {
+    const colorT = togglesRef.current.colorTemp ? hoverTRef.current : 0;
+    tmpColor1.copy(AMBER).lerp(COOL_BLUE, colorT);
+    material.uniforms.uColor.value.copy(tmpColor1);
+    tmpColor2.copy(LIGHT_POOL_BRIGHT).lerp(COOL_WHITE, colorT);
+    material.uniforms.uColorBright.value.copy(tmpColor2);
+  });
+
   return (
     <mesh material={material} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
       <planeGeometry args={[16, 16]} />
@@ -505,6 +744,212 @@ function GroundLightPool() {
   );
 }
 
+/* ─── Scene Lights ─── */
+function SceneLights() {
+  const { togglesRef, hoverTRef } = useContext(CubeContext);
+  const light1 = useRef<THREE.PointLight>(null);
+  const light2 = useRef<THREE.PointLight>(null);
+  const tmpColor = useMemo(() => new THREE.Color(), []);
+
+  useFrame(() => {
+    const colorT = togglesRef.current.colorTemp ? hoverTRef.current : 0;
+    tmpColor.copy(AMBER).lerp(COOL_BLUE, colorT);
+    light1.current?.color.copy(tmpColor);
+    light2.current?.color.copy(tmpColor);
+  });
+
+  return (
+    <>
+      <pointLight ref={light1} color={AMBER} intensity={0.5} distance={3} decay={2} position={[0, 0.45, 0]} />
+      <pointLight ref={light2} color={AMBER} intensity={0.2} distance={2} decay={2} position={[0, 0.05, 0]} />
+    </>
+  );
+}
+
+/* ─── Mock Terraform EC2 Data ─── */
+const EC2_DATA = {
+  resource: 'aws_instance.main',
+  instance_id: 'i-0a3b8f29d4e6c1072',
+  instance_type: 't3.medium',
+  ami: 'ami-0c55b159cbfafe1f0',
+  availability_zone: 'us-east-1a',
+  state: 'running',
+  public_ip: '54.210.167.89',
+  private_ip: '10.0.1.42',
+  vpc_id: 'vpc-0a1b2c3d4e5f6g7h8',
+  security_groups: ['sg-web-prod'],
+  key_name: 'prod-ssh-key',
+  tags: {
+    Name: 'web-server-prod',
+    Environment: 'production',
+    Team: 'platform',
+  },
+};
+
+/* ─── Hover Tooltip (screen-space projected) ─── */
+/* Rendered as a DOM element in App, positioned by HoverDetector's useFrame */
+
+/* ─── Service Info Card (fixed right panel) ─── */
+function ServiceInfoCard({ selected, onClose }: { selected: boolean; onClose: () => void }) {
+  const kv: React.CSSProperties = {
+    color: 'rgba(255, 200, 140, 0.45)',
+    paddingRight: 14,
+    whiteSpace: 'nowrap',
+    verticalAlign: 'top',
+    paddingBottom: 4,
+  };
+  const vv: React.CSSProperties = {
+    color: 'rgba(255, 200, 140, 0.9)',
+    whiteSpace: 'nowrap',
+    paddingBottom: 4,
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 1000,
+      width: 340,
+      background: 'rgba(8, 6, 4, 0.92)',
+      borderLeft: '1px solid rgba(255, 150, 50, 0.2)',
+      backdropFilter: 'blur(16px)',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      color: 'rgba(255, 200, 140, 0.7)',
+      transform: selected ? 'translateX(0)' : 'translateX(100%)',
+      transition: 'transform 0.2s ease',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px',
+        borderBottom: '1px solid rgba(255, 150, 50, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <div>
+          <div style={{
+            fontSize: 10,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'rgba(255, 200, 140, 0.4)',
+            marginBottom: 4,
+          }}>
+            Resource
+          </div>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: 'rgba(255, 180, 100, 0.95)',
+          }}>
+            {EC2_DATA.resource}
+          </div>
+        </div>
+        <div
+          onClick={onClose}
+          style={{
+            cursor: 'pointer',
+            color: 'rgba(255, 200, 140, 0.4)',
+            fontSize: 18,
+            lineHeight: 1,
+            padding: '4px 8px',
+            borderRadius: 4,
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255, 200, 140, 0.8)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255, 200, 140, 0.4)'; }}
+        >
+          &#x2715;
+        </div>
+      </div>
+
+      {/* State badge */}
+      <div style={{
+        padding: '12px 20px',
+        borderBottom: '1px solid rgba(255, 150, 50, 0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        flexShrink: 0,
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: 4,
+          background: '#44ff88',
+          boxShadow: '0 0 8px rgba(68, 255, 136, 0.4)',
+        }} />
+        <span style={{ color: '#44ff88', fontWeight: 'bold' }}>{EC2_DATA.state}</span>
+        <span style={{ color: 'rgba(255, 200, 140, 0.3)', marginLeft: 'auto' }}>
+          {EC2_DATA.availability_zone}
+        </span>
+      </div>
+
+      {/* Details */}
+      <div style={{ padding: '16px 20px', overflowY: 'auto', flex: 1 }}>
+        {/* Instance section */}
+        <div style={{
+          fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em',
+          color: 'rgba(255, 200, 140, 0.35)', marginBottom: 10,
+        }}>
+          Instance
+        </div>
+        <table style={{ borderSpacing: 0, marginBottom: 20, width: '100%' }}>
+          <tbody>
+            <tr><td style={kv}>id</td><td style={vv}>{EC2_DATA.instance_id}</td></tr>
+            <tr><td style={kv}>type</td><td style={vv}>{EC2_DATA.instance_type}</td></tr>
+            <tr><td style={kv}>ami</td><td style={vv}>{EC2_DATA.ami}</td></tr>
+            <tr><td style={kv}>key_name</td><td style={vv}>{EC2_DATA.key_name}</td></tr>
+          </tbody>
+        </table>
+
+        {/* Network section */}
+        <div style={{
+          fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em',
+          color: 'rgba(255, 200, 140, 0.35)', marginBottom: 10,
+        }}>
+          Network
+        </div>
+        <table style={{ borderSpacing: 0, marginBottom: 20, width: '100%' }}>
+          <tbody>
+            <tr><td style={kv}>public_ip</td><td style={vv}>{EC2_DATA.public_ip}</td></tr>
+            <tr><td style={kv}>private_ip</td><td style={vv}>{EC2_DATA.private_ip}</td></tr>
+            <tr><td style={kv}>vpc_id</td><td style={vv}>{EC2_DATA.vpc_id}</td></tr>
+            <tr><td style={kv}>security_groups</td><td style={vv}>{EC2_DATA.security_groups.join(', ')}</td></tr>
+          </tbody>
+        </table>
+
+        {/* Tags section */}
+        <div style={{
+          fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em',
+          color: 'rgba(255, 200, 140, 0.35)', marginBottom: 10,
+        }}>
+          Tags
+        </div>
+        <table style={{ borderSpacing: 0, width: '100%' }}>
+          <tbody>
+            {Object.entries(EC2_DATA.tags).map(([k, v]) => (
+              <tr key={k}><td style={kv}>{k}</td><td style={vv}>{v}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        padding: '12px 20px',
+        borderTop: '1px solid rgba(255, 150, 50, 0.1)',
+        fontSize: 10,
+        color: 'rgba(255, 200, 140, 0.25)',
+        flexShrink: 0,
+      }}>
+        terraform state &middot; last applied 2m ago
+      </div>
+    </div>
+  );
+}
+
+/* ─── Ground ─── */
 function Ground() {
   return (
     <group>
@@ -516,56 +961,209 @@ function Ground() {
   );
 }
 
+/* ─── Control Panel ─── */
+function ControlPanel({ toggles, onToggle }: {
+  toggles: Record<EffectKey, boolean>;
+  onToggle: (key: EffectKey) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <div style={{
+      position: 'fixed', top: 16, left: 16, zIndex: 1000,
+      background: 'rgba(10, 8, 5, 0.85)',
+      border: '1px solid rgba(255, 150, 50, 0.25)',
+      borderRadius: 8,
+      padding: collapsed ? '8px 14px' : '12px 16px',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      color: 'rgba(255, 200, 140, 0.7)',
+      backdropFilter: 'blur(10px)',
+      userSelect: 'none',
+      minWidth: 180,
+    }}>
+      {/* Header */}
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+          marginBottom: collapsed ? 0 : 10,
+        }}
+      >
+        <span style={{
+          display: 'inline-block',
+          transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s ease',
+          fontSize: 10,
+        }}>&#9660;</span>
+        <span style={{ fontWeight: 'bold', letterSpacing: '0.05em' }}>Hover Effects</span>
+      </div>
+
+      {/* Toggle list */}
+      {!collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {ALL_EFFECTS.map(key => (
+            <div key={key} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            }}>
+              <span style={{
+                opacity: toggles[key] ? 1 : 0.5,
+                transition: 'opacity 0.2s',
+              }}>
+                {EFFECT_LABELS[key]}
+              </span>
+              <div
+                onClick={() => onToggle(key)}
+                style={{
+                  width: 32, height: 16, borderRadius: 8,
+                  background: toggles[key] ? 'rgba(255, 136, 0, 0.4)' : 'rgba(255, 255, 255, 0.08)',
+                  border: `1px solid ${toggles[key] ? 'rgba(255, 136, 0, 0.6)' : 'rgba(255, 255, 255, 0.15)'}`,
+                  position: 'relative', cursor: 'pointer',
+                  transition: 'background 0.2s, border-color 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  width: 10, height: 10, borderRadius: 5,
+                  background: toggles[key] ? '#ff8800' : 'rgba(255, 255, 255, 0.25)',
+                  position: 'absolute', top: 2,
+                  left: toggles[key] ? 19 : 2,
+                  transition: 'left 0.2s ease, background 0.2s',
+                  boxShadow: toggles[key] ? '0 0 6px rgba(255, 136, 0, 0.5)' : 'none',
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── App ─── */
 export default function App() {
   const [isOrtho, setIsOrtho] = useState(true);
+  const [toggles, setToggles] = useState<Record<EffectKey, boolean>>({ ...DEFAULT_TOGGLES });
+  const [selected, setSelected] = useState(false);
+  const [selectToggles, setSelectToggles] = useState<Record<SelectEffectKey, boolean>>({ ...DEFAULT_SELECT_TOGGLES });
 
-  const toggle = useCallback(() => setIsOrtho(prev => !prev), []);
+  const togglesRef = useRef(toggles);
+  togglesRef.current = toggles;
+  const hoverTRef = useRef(0);
+
+  const selectTogglesRef = useRef(selectToggles);
+  selectTogglesRef.current = selectToggles;
+  const selectedTRef = useRef(0);
+
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const onSelect = useCallback(() => setSelected(true), []);
+  const onDeselect = useCallback(() => setSelected(false), []);
+
+  const cubeCtx = useMemo<CubeContextType>(() => ({
+    togglesRef,
+    hoverTRef,
+    selectTogglesRef,
+    selectedTRef,
+    onSelect,
+    onDeselect,
+    tooltipRef,
+  }), []);
+
+  const toggleCamera = useCallback(() => setIsOrtho(prev => !prev), []);
+  const toggleEffect = useCallback((key: EffectKey) => {
+    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+  const toggleSelectEffect = useCallback((key: SelectEffectKey) => {
+    setSelectToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'c' || e.key === 'C') toggle();
+      if (e.key === 'c' || e.key === 'C') toggleCamera();
+      if (e.key === 'Escape') onDeselect();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [toggle]);
+  }, [toggleCamera, onDeselect]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
       <Canvas dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.6 }}>
         <color attach="background" args={['#010103']} />
 
-        {isOrtho ? (
-          <OrthographicCamera makeDefault position={[6, 6, 6]} zoom={80} near={-100} far={100} />
-        ) : (
-          <PerspectiveCamera makeDefault position={[0, 0.8, 4.5]} fov={32} near={0.1} far={100} />
-        )}
-        <OrbitControls
-          enablePan={false}
-          enableZoom={true}
-          enableDamping
-          dampingFactor={0.05}
-          maxPolarAngle={Math.PI / 2 - 0.05}
-          target={isOrtho ? [0, 0.3, 0] : [0, 0.5, 0]}
-          minDistance={isOrtho ? undefined : 2}
-          maxDistance={isOrtho ? undefined : 12}
-        />
+        <CubeContext.Provider value={cubeCtx}>
+          {isOrtho ? (
+            <OrthographicCamera makeDefault position={[6, 6, 6]} zoom={80} near={-100} far={100} />
+          ) : (
+            <PerspectiveCamera makeDefault position={[0, 0.8, 4.5]} fov={32} near={0.1} far={100} />
+          )}
+          <OrbitControls
+            enablePan={false}
+            enableZoom={true}
+            enableDamping
+            dampingFactor={0.05}
+            maxPolarAngle={Math.PI / 2 - 0.05}
+            target={isOrtho ? [0, 0.3, 0] : [0, 0.5, 0]}
+            minDistance={isOrtho ? undefined : 2}
+            maxDistance={isOrtho ? undefined : 12}
+          />
 
-        <ambientLight color={0x0a0a18} intensity={0.15} />
-        <pointLight color={AMBER} intensity={0.5} distance={3} decay={2} position={[0, 0.45, 0]} />
-        <pointLight color={AMBER} intensity={0.2} distance={2} decay={2} position={[0, 0.05, 0]} />
+          <ambientLight color={0x0a0a18} intensity={0.15} />
+          <SceneLights />
 
-        <GlowingCube />
-        <Ground />
+          <HoverDetector selected={selected} />
+          <GlowingCube />
+          <Ground />
 
-        <EffectComposer>
-          <Bloom luminanceThreshold={0.5} mipmapBlur intensity={2.0} />
-          <Noise opacity={0.03} />
-          <Vignette eskil={false} offset={0.1} darkness={1.1} />
-        </EffectComposer>
+          <EffectComposer>
+            <Bloom luminanceThreshold={0.5} mipmapBlur intensity={2.0} />
+            <Noise opacity={0.03} />
+            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+          </EffectComposer>
+        </CubeContext.Provider>
       </Canvas>
 
+      {/* Hover tooltip - positioned by HoverDetector via ref */}
+      <div
+        ref={tooltipRef}
+        style={{
+          position: 'fixed',
+          top: 0, left: 0,
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: 900,
+          fontFamily: 'monospace',
+          fontSize: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: 'rgba(10, 8, 5, 0.88)',
+          border: '1px solid rgba(255, 150, 50, 0.25)',
+          borderRadius: 6,
+          padding: '6px 12px',
+          backdropFilter: 'blur(10px)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ color: 'rgba(255, 200, 140, 0.9)', fontWeight: 'bold' }}>
+          {EC2_DATA.instance_type}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: 3,
+            background: '#44ff88',
+            boxShadow: '0 0 6px rgba(68, 255, 136, 0.4)',
+            display: 'inline-block',
+          }} />
+          <span style={{ color: '#44ff88', fontSize: 11 }}>{EC2_DATA.state}</span>
+        </span>
+      </div>
+
+      <ControlPanel toggles={toggles} onToggle={toggleEffect} />
+      <ServiceInfoCard selected={selected} onClose={onDeselect} />
+
       <button
-        onClick={toggle}
+        onClick={toggleCamera}
         onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255, 200, 140, 0.8)'; }}
         onMouseLeave={e => { e.currentTarget.style.color = isOrtho ? 'rgba(255, 200, 140, 0.7)' : 'rgba(255, 200, 140, 0.5)'; }}
         style={{
