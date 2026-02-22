@@ -1,5 +1,4 @@
-// import index from "./glowing-cube.html";
-import index from "./glowing-cube-2.html";
+import index from "./index.html";
 
 Bun.serve({
   routes: {

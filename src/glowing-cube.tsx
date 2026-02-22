@@ -295,9 +295,9 @@ function GlowingCube() {
         vec3 col = mix(uColorBot, uColorTop, smoothstep(0.0, 1.0, vHeight));
         float alpha = 0.6 + vHeight * 0.4;
         alpha = alpha + uHover * (1.0 - alpha);
-        float pulse = exp(-mod(uSelectTime, 2.0) * 3.0) * uSelectEdgePulse;
-        col = mix(col, vec3(1.0, 0.95, 0.9), pulse * 0.6);
-        alpha = min(alpha + pulse * 0.3 + uSelectEdgePulse * 0.2, 1.0);
+        float pulse = exp(-mod(uSelectTime, 1.5) * 2.5) * uSelectEdgePulse;
+        col = col * (1.0 + pulse * 4.0) + vec3(1.0, 0.7, 0.3) * pulse * 1.5;
+        alpha = min(alpha + pulse * 0.6 + uSelectEdgePulse * 0.4, 1.0);
         gl_FragColor = vec4(col, alpha);
       }
     `,
@@ -647,10 +647,24 @@ function ReflectiveGround() {
 
     // @ts-ignore - Reflector.onBeforeRender has non-standard signature
     const origBeforeRender = ref.onBeforeRender;
+
+    // Wrap origBeforeRender to hide objects flagged with excludeFromReflection
+    const reflectionSafeRender = function (this: any, rend: any, scn: any, cam: any) {
+      const hidden: THREE.Object3D[] = [];
+      scn.traverse((obj: THREE.Object3D) => {
+        if (obj.userData.excludeFromReflection && obj.visible) {
+          obj.visible = false;
+          hidden.push(obj);
+        }
+      });
+      origBeforeRender.call(this, rend, scn, cam);
+      hidden.forEach((obj: THREE.Object3D) => { obj.visible = true; });
+    };
+
     // @ts-ignore
     ref.onBeforeRender = function (rend: any, scn: any, cam: any) {
       if (!cam.isOrthographicCamera) {
-        origBeforeRender.call(this, rend, scn, cam);
+        reflectionSafeRender.call(this, rend, scn, cam);
         return;
       }
       const savedProjection = cam.projectionMatrix.clone();
@@ -659,7 +673,7 @@ function ReflectiveGround() {
         c.projectionMatrix.copy(savedProjection);
         origRender(s, c);
       };
-      origBeforeRender.call(this, rend, scn, cam);
+      reflectionSafeRender.call(this, rend, scn, cam);
       rend.render = origRender;
     };
 
@@ -1066,9 +1080,11 @@ function OrbitRing() {
   });
 
   return (
-    <mesh ref={ringRef} position={[0, CUBE_Y, 0]} rotation={[Math.PI / 6, 0, Math.PI / 12]} material={material}>
-      <torusGeometry args={[CUBE_SIZE * 0.75, 0.008, 8, 64]} />
-    </mesh>
+    <group position={[0, CUBE_Y, 0]} rotation={[Math.PI / 10, 0, Math.PI / 16]}>
+      <mesh ref={ringRef} material={material}>
+        <torusGeometry args={[CUBE_SIZE * 0.75, 0.008, 8, 64]} />
+      </mesh>
+    </group>
   );
 }
 
@@ -1147,8 +1163,7 @@ function GroundConnectionBeam() {
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
+    side: THREE.FrontSide,
     uniforms: {
       uOpacity: { value: 0 },
       uTime: { value: 0 },
@@ -1168,9 +1183,9 @@ function GroundConnectionBeam() {
         float centerFade = 1.0 - pow(abs(vUv.x - 0.5) * 2.0, 2.0);
         float heightFade = pow(1.0 - vUv.y, 1.5);
         float pulse = 0.8 + 0.2 * sin(uTime * 2.0 + vUv.y * 8.0);
-        float alpha = centerFade * heightFade * pulse * uOpacity * 0.3;
+        float alpha = centerFade * heightFade * pulse * uOpacity * 0.5;
         vec3 col = vec3(1.0, 0.55, 0.1);
-        gl_FragColor = vec4(col * 2.0, alpha);
+        gl_FragColor = vec4(col * 3.0, alpha);
       }
     `,
   }), []);
@@ -1180,16 +1195,14 @@ function GroundConnectionBeam() {
     const t = selectTogglesRef.current.groundBeam ? s : 0;
     material.uniforms.uOpacity.value = t;
     material.uniforms.uTime.value = clock.getElapsedTime();
-    // Hide from Reflector when inactive to avoid clip plane artifacts
     if (meshRef.current) meshRef.current.visible = t > 0.01;
   });
 
-  // Raise beam above ground plane (y=0.02) to avoid Reflector clip plane intersection
-  const beamHeight = CUBE_Y - 0.02;
+  const beamHeight = CUBE_Y - 0.04;
 
   return (
     <mesh ref={meshRef} material={material} position={[0, 0.02 + beamHeight / 2, 0]} visible={false}>
-      <planeGeometry args={[CUBE_SIZE * 0.3, beamHeight]} />
+      <planeGeometry args={[CUBE_SIZE * 0.25, beamHeight]} />
     </mesh>
   );
 }

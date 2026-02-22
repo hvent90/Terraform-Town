@@ -13,6 +13,9 @@ bun.lock
 # IDE
 .idea/
 .vscode/
+.agent/
+.junie/
+.windsurf/
 *.iml
 *.swp
 *.swo
