@@ -9,7 +9,7 @@ import { CUBE_SIZE } from '../../../shared/geometry';
 import { useSceneContext } from '../../../shared/context';
 
 // @ts-ignore
-import GEIST_PIXEL_GRID from '../../../fonts/GeistPixel-Grid.ttf';
+import GEIST_PIXEL_GRID from '../../../assets/fonts/GeistPixel-Grid.ttf';
 
 export function TraceLines() {
   const { togglesRef, hoverTRef, selectTogglesRef, selectedTRef } = useSceneContext();
