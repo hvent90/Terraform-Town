@@ -15,7 +15,7 @@ import { ResourceTooltip } from './ui/features/ResourceTooltip';
 import { TerraformInput } from './ui/features/TerraformInput';
 import { parseHcl } from './state/parseHcl';
 import { ec2Resource } from './resources/ec2';
-import type { TerraformState, Resource } from './types';
+import type { TerraformState, Resource, Connection } from './types';
 import {
   ALL_EFFECTS, ALL_POST_PROCESS, ALL_WATER,
   EFFECT_LABELS, POST_PROCESS_LABELS, WATER_LABELS,
@@ -90,7 +90,7 @@ function buildInspectorSections(resource: Resource) {
   return [{ title: 'Details', rows: mainRows }, ...objectSections];
 }
 
-function Scene({ isOrtho, resources }: { isOrtho: boolean; resources: Resource[] }) {
+function Scene({ isOrtho, resources, positions }: { isOrtho: boolean; resources: Resource[]; positions: Map<string, [number, number, number]> }) {
   const theme = useTheme();
   const Lights = theme.Lights;
   const PostProcessing = theme.PostProcessing;
@@ -112,10 +112,8 @@ function Scene({ isOrtho, resources }: { isOrtho: boolean; resources: Resource[]
         minDistance={isOrtho ? undefined : 2}
         maxDistance={isOrtho ? undefined : 12}
       />
-      {resources.map((resource, i) => {
-        const pos = resource.position
-          ? [resource.position.x, resource.position.y, resource.position.z] as [number, number, number]
-          : gridPosition(i, resources.length);
+      {resources.map((resource) => {
+        const pos = positions.get(resource.id) ?? [0, 0, 0];
         return (
           <ResourceIdContext.Provider key={resource.id} value={resource.id}>
             <group position={pos}>
@@ -139,6 +137,7 @@ export default function App({ terraformState }: AppProps) {
   const [generatedState, setGeneratedState] = useState<TerraformState | null>(null);
   const state = generatedState ?? terraformState ?? DEFAULT_STATE;
   const resources = state.resources;
+  const connections = state.connections;
 
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [hoveredResourceId, setHoveredResourceId] = useState<string | null>(null);
@@ -180,6 +179,28 @@ export default function App({ terraformState }: AppProps) {
   const waterRef = useRef(waterValues);
   waterRef.current = waterValues;
 
+  const positions = useMemo(() => {
+    const map = new Map<string, [number, number, number]>();
+    for (let i = 0; i < resources.length; i++) {
+      const r = resources[i];
+      const pos = r.position
+        ? [r.position.x, r.position.y, r.position.z] as [number, number, number]
+        : gridPosition(i, resources.length);
+      map.set(r.id, pos);
+    }
+    return map;
+  }, [resources]);
+
+  const connectionsRef = useRef<Connection[]>(connections);
+  connectionsRef.current = connections;
+  const resourcePositionsRef = useRef<Map<string, [number, number, number]>>(positions);
+  resourcePositionsRef.current = positions;
+  const connectionTogglesRef = useRef<Record<string, boolean>>({});
+  const hoveredResourceIdRef = useRef<string | null>(null);
+  hoveredResourceIdRef.current = hoveredResourceId;
+  const selectedResourceIdRef = useRef<string | null>(null);
+  selectedResourceIdRef.current = selectedResourceId;
+
   const tooltipRef = useRef<HTMLDivElement>(null);
   const onSelect = useCallback((resourceId: string) => {
     setSelectedResourceId(prev => prev === resourceId ? null : resourceId);
@@ -200,6 +221,11 @@ export default function App({ terraformState }: AppProps) {
     tooltipRef,
     postProcessRef,
     waterRef,
+    connectionsRef,
+    resourcePositionsRef,
+    connectionTogglesRef,
+    hoveredResourceIdRef,
+    selectedResourceIdRef,
   }), []);
 
   const toggleCamera = useCallback(() => setIsOrtho(prev => !prev), []);
@@ -245,7 +271,7 @@ export default function App({ terraformState }: AppProps) {
           <color attach="background" args={['#010103']} />
           <ThemeProvider theme={tronTheme}>
             <SceneContext.Provider value={sceneCtx}>
-              <Scene isOrtho={isOrtho} resources={resources} />
+              <Scene isOrtho={isOrtho} resources={resources} positions={positions} />
             </SceneContext.Provider>
           </ThemeProvider>
         </Canvas>

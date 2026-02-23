@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { Connection } from '../types';
 
 export type SceneContextType = {
   togglesRef: React.MutableRefObject<Record<string, boolean>>;
@@ -12,6 +13,11 @@ export type SceneContextType = {
   tooltipRef: React.RefObject<HTMLDivElement | null>;
   postProcessRef: React.MutableRefObject<Record<string, number>>;
   waterRef: React.MutableRefObject<Record<string, number>>;
+  connectionsRef: React.MutableRefObject<Connection[]>;
+  resourcePositionsRef: React.MutableRefObject<Map<string, [number, number, number]>>;
+  connectionTogglesRef: React.MutableRefObject<Record<string, boolean>>;
+  hoveredResourceIdRef: React.MutableRefObject<string | null>;
+  selectedResourceIdRef: React.MutableRefObject<string | null>;
 };
 
 export const SceneContext = createContext<SceneContextType>(null!);
