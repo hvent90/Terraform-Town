@@ -27,12 +27,30 @@ export function ResourceInspector({
   return (
     <SlidePanel open={open} onClose={onClose} side="right" width={340}>
       {/* Header */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255, 150, 50, 0.15)', flexShrink: 0 }}>
-        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.5, marginBottom: 4 }}>
-          {resourceLabel}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255, 150, 50, 0.15)', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.5, marginBottom: 4 }}>
+            {resourceLabel}
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 'bold' }}>
+            {resourceName}
+          </div>
         </div>
-        <div style={{ fontSize: 14, fontWeight: 'bold' }}>
-          {resourceName}
+        <div
+          onClick={onClose}
+          style={{
+            cursor: 'pointer',
+            opacity: 0.35,
+            fontSize: 16,
+            lineHeight: 1,
+            padding: '2px 4px',
+            borderRadius: 4,
+            transition: 'opacity 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '0.35'; }}
+        >
+          &#x2715;
         </div>
       </div>
 

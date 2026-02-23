@@ -1,17 +1,17 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useSceneContext } from '../../shared/context';
+import { useSceneContext, getEffectT } from '../../shared/context';
 import { AMBER, COOL_BLUE } from './colors';
 
 export function SceneLights() {
-  const { togglesRef, hoverTRef } = useSceneContext();
+  const ctx = useSceneContext();
   const light1 = useRef<THREE.PointLight>(null);
   const light2 = useRef<THREE.PointLight>(null);
   const tmpColor = useMemo(() => new THREE.Color(), []);
 
   useFrame(() => {
-    const colorT = togglesRef.current.colorTemp ? hoverTRef.current : 0;
+    const colorT = getEffectT(ctx, 'colorTemp');
     tmpColor.copy(AMBER).lerp(COOL_BLUE, colorT);
     light1.current?.color.copy(tmpColor);
     light2.current?.color.copy(tmpColor);

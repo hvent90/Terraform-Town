@@ -12,13 +12,12 @@ import { EffectsPanel } from './ui/features/EffectsPanel';
 import { PostProcessPanel } from './ui/features/PostProcessPanel';
 import { ResourceInspector } from './ui/features/ResourceInspector';
 import { ResourceTooltip } from './ui/features/ResourceTooltip';
-import { CameraToggle } from './ui/features/CameraToggle';
 import { ec2Resource } from './resources/ec2';
 import {
-  ALL_EFFECTS, ALL_SELECT_EFFECTS, ALL_POST_PROCESS,
-  EFFECT_LABELS, SELECT_EFFECT_LABELS, POST_PROCESS_LABELS,
-  DEFAULT_TOGGLES, DEFAULT_SELECT_TOGGLES, DEFAULT_POST_PROCESS,
-  POST_PROCESS_RANGES,
+  ALL_EFFECTS, ALL_POST_PROCESS, ALL_WATER,
+  EFFECT_LABELS, POST_PROCESS_LABELS, WATER_LABELS,
+  DEFAULT_HOVER_TOGGLES, DEFAULT_SELECT_TOGGLES, DEFAULT_POST_PROCESS, DEFAULT_WATER,
+  POST_PROCESS_RANGES, WATER_RANGES,
 } from './theme/tron/effects';
 
 function Scene({ isOrtho }: { isOrtho: boolean }) {
@@ -64,13 +63,14 @@ const inspectorSections = ec2Resource.infoCard.sections.map(section => ({
 
 export default function App() {
   const [isOrtho, setIsOrtho] = useState(true);
-  const [toggles, setToggles] = useState<Record<string, boolean>>({ ...DEFAULT_TOGGLES });
+  const [hoverToggles, setHoverToggles] = useState<Record<string, boolean>>({ ...DEFAULT_HOVER_TOGGLES });
   const [selected, setSelected] = useState(false);
   const [selectToggles, setSelectToggles] = useState<Record<string, boolean>>({ ...DEFAULT_SELECT_TOGGLES });
   const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
+  const [waterValues, setWaterValues] = useState<Record<string, number>>({ ...DEFAULT_WATER });
 
-  const togglesRef = useRef(toggles);
-  togglesRef.current = toggles;
+  const togglesRef = useRef(hoverToggles);
+  togglesRef.current = hoverToggles;
   const hoverTRef = useRef(0);
 
   const selectTogglesRef = useRef(selectToggles);
@@ -82,8 +82,11 @@ export default function App() {
   const postProcessRef = useRef(postProcessValues);
   postProcessRef.current = postProcessValues;
 
+  const waterRef = useRef(waterValues);
+  waterRef.current = waterValues;
+
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const onSelect = useCallback(() => setSelected(true), []);
+  const onSelect = useCallback(() => setSelected(prev => !prev), []);
   const onDeselect = useCallback(() => setSelected(false), []);
 
   const sceneCtx = useMemo<SceneContextType>(() => ({
@@ -96,17 +99,21 @@ export default function App() {
     onDeselect,
     tooltipRef,
     postProcessRef,
+    waterRef,
   }), []);
 
   const toggleCamera = useCallback(() => setIsOrtho(prev => !prev), []);
-  const toggleEffect = useCallback((key: string) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleHoverEffect = useCallback((key: string) => {
+    setHoverToggles(prev => ({ ...prev, [key]: !prev[key] }));
   }, []);
   const toggleSelectEffect = useCallback((key: string) => {
     setSelectToggles(prev => ({ ...prev, [key]: !prev[key] }));
   }, []);
   const updatePostProcess = useCallback((key: string, val: number) => {
     setPostProcessValues(prev => ({ ...prev, [key]: val }));
+  }, []);
+  const updateWater = useCallback((key: string, val: number) => {
+    setWaterValues(prev => ({ ...prev, [key]: val }));
   }, []);
 
   useEffect(() => {
@@ -162,18 +169,12 @@ export default function App() {
           display: 'flex', flexDirection: 'column', gap: 8,
         }}>
           <EffectsPanel
-            title="Hover Effects"
             effects={ALL_EFFECTS}
             labels={EFFECT_LABELS}
-            toggles={toggles}
-            onToggle={toggleEffect}
-          />
-          <EffectsPanel
-            title="Selected Effects"
-            effects={ALL_SELECT_EFFECTS}
-            labels={SELECT_EFFECT_LABELS}
-            toggles={selectToggles}
-            onToggle={toggleSelectEffect}
+            hoverToggles={hoverToggles}
+            selectToggles={selectToggles}
+            onToggleHover={toggleHoverEffect}
+            onToggleSelect={toggleSelectEffect}
           />
           <PostProcessPanel
             params={ALL_POST_PROCESS}
@@ -182,6 +183,15 @@ export default function App() {
             defaults={DEFAULT_POST_PROCESS}
             values={postProcessValues}
             onChange={updatePostProcess}
+          />
+          <PostProcessPanel
+            title="Water / Reflection"
+            params={ALL_WATER}
+            labels={WATER_LABELS}
+            ranges={WATER_RANGES}
+            defaults={DEFAULT_WATER}
+            values={waterValues}
+            onChange={updateWater}
           />
         </div>
 
@@ -196,10 +206,6 @@ export default function App() {
           sections={inspectorSections}
           footer="terraform state &middot; last applied 2m ago"
         />
-
-        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000 }}>
-          <CameraToggle isOrtho={isOrtho} onToggle={toggleCamera} />
-        </div>
       </div>
     </ThemeProvider>
   );

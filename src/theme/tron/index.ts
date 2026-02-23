@@ -19,6 +19,7 @@ import { SlidePanel } from './ui/SlidePanel';
 import { DataTable } from './ui/DataTable';
 import { SectionHeader } from './ui/SectionHeader';
 import { Slider } from './ui/Slider';
+import { EffectRow } from './ui/EffectRow';
 
 export const tronTheme: Theme = {
   resources: {
@@ -50,6 +51,7 @@ export const tronTheme: Theme = {
       DataTable,
       SectionHeader,
       Slider,
+      EffectRow,
     },
   },
 };

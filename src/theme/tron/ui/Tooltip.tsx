@@ -4,6 +4,7 @@ import { ui } from '../colors';
 export function Tooltip({ children }: TooltipProps) {
   return (
     <div style={{
+      color: ui.text,
       fontFamily: ui.font,
       fontSize: 12,
       display: 'flex',

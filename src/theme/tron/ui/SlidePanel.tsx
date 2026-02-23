@@ -23,33 +23,6 @@ export function SlidePanel({ open, onClose, side = 'right', width = 340, childre
       flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      {/* Close button */}
-      <div style={{
-        padding: '16px 20px',
-        borderBottom: `1px solid ${ui.borderSubtle}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        flexShrink: 0,
-      }}>
-        <div
-          onClick={onClose}
-          style={{
-            cursor: 'pointer',
-            color: ui.textFaint,
-            fontSize: 18,
-            lineHeight: 1,
-            padding: '4px 8px',
-            borderRadius: 4,
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = ui.textBright; }}
-          onMouseLeave={e => { e.currentTarget.style.color = ui.textFaint; }}
-        >
-          &#x2715;
-        </div>
-      </div>
-
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {children}
       </div>

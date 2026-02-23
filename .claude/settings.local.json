@@ -8,7 +8,11 @@
       "Bash(gh release:*)",
       "Bash(mkdir -p \"C:/Users/Space Command/WebstormProjects/cube-threejs/src/fonts\" && python -c \"\nfrom fontTools.ttLib import TTFont\nfont = TTFont\\('C:/Users/Space Command/WebstormProjects/cube-threejs/node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Grid.woff2'\\)\nfont.save\\('C:/Users/Space Command/WebstormProjects/cube-threejs/src/fonts/GeistPixel-Grid.ttf'\\)\nprint\\('Converted successfully'\\)\n\" 2>&1)",
       "WebFetch(domain:api.github.com)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:bun.com)",
+      "WebFetch(domain:threejsroadmap.com)",
+      "WebFetch(domain:r3f.docs.pmnd.rs)"
     ]
   }
 }

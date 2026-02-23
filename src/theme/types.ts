@@ -9,6 +9,7 @@ import type {
   DataTableProps,
   SectionHeaderProps,
   SliderProps,
+  EffectRowProps,
 } from '../ui/components';
 
 export type Theme = {
@@ -33,6 +34,7 @@ export type Theme = {
       DataTable: React.ComponentType<DataTableProps>;
       SectionHeader: React.ComponentType<SectionHeaderProps>;
       Slider: React.ComponentType<SliderProps>;
+      EffectRow: React.ComponentType<EffectRowProps>;
     };
   };
 };

@@ -1,52 +1,50 @@
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useMemo } from 'react';
-import dataStreamVert from '../shaders/data-stream.vert.glsl';
-import dataStreamFrag from '../shaders/data-stream.frag.glsl';
+import { createDataStreamMaterial } from '../shaders/data-stream.tsl';
 import { CUBE_SIZE, CUBE_Y } from '../../../shared/geometry';
-import { useSceneContext } from '../../../shared/context';
+import { useSceneContext, getEffectT } from '../../../shared/context';
 
 export function DataStreamParticles() {
-  const { selectTogglesRef, selectedTRef } = useSceneContext();
+  const ctx = useSceneContext();
   const particleCount = 200;
 
-  const { positions, speeds } = useMemo(() => {
-    const pos = new Float32Array(particleCount * 3);
-    const spd = new Float32Array(particleCount);
+  const { geometry } = useMemo(() => {
+    // Base quad for billboarding
+    const quadPos = new Float32Array([-1, 1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0]);
+    const quadUV = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const quadIdx = [0, 2, 1, 2, 3, 1];
+
+    const geo = new THREE.InstancedBufferGeometry();
+    geo.setIndex(quadIdx);
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(quadPos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(quadUV, 2));
+
+    // Per-instance attributes
+    const positions = new Float32Array(particleCount * 3);
+    const speeds = new Float32Array(particleCount);
     for (let i = 0; i < particleCount; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * CUBE_SIZE * 0.8;
-      pos[i * 3 + 1] = Math.random() * 1.5;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * CUBE_SIZE * 0.8;
-      spd[i] = 0.3 + Math.random() * 0.7;
+      positions[i * 3] = (Math.random() - 0.5) * CUBE_SIZE * 0.8;
+      positions[i * 3 + 1] = Math.random() * 1.5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * CUBE_SIZE * 0.8;
+      speeds[i] = 0.3 + Math.random() * 0.7;
     }
-    return { positions: pos, speeds: spd };
+
+    geo.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(positions, 3));
+    geo.setAttribute('instanceSpeed', new THREE.InstancedBufferAttribute(speeds, 1));
+    geo.instanceCount = particleCount;
+
+    return { geometry: geo };
   }, []);
 
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: {
-      uOpacity: { value: 0 },
-      uTime: { value: 0 },
-    },
-    vertexShader: dataStreamVert,
-    fragmentShader: dataStreamFrag,
-  }), []);
+  const { material, uniforms } = useMemo(() => createDataStreamMaterial(), []);
 
   useFrame(({ clock }) => {
-    const s = selectedTRef.current;
-    const t = selectTogglesRef.current.dataStream ? s : 0;
-    material.uniforms.uOpacity.value = t;
-    material.uniforms.uTime.value = clock.getElapsedTime();
+    uniforms.uOpacity.value = getEffectT(ctx, 'dataStream');
+    uniforms.uTime.value = clock.getElapsedTime();
   });
 
   return (
-    <points material={material} position={[0, CUBE_Y + CUBE_SIZE * 0.5, 0]}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-speed" args={[speeds, 1]} />
-      </bufferGeometry>
-    </points>
+    <mesh material={material} geometry={geometry} position={[0, CUBE_Y + CUBE_SIZE * 0.5, 0]} />
   );
 }

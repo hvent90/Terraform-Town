@@ -1,34 +1,23 @@
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useMemo } from 'react';
-import groundLightPoolVert from '../shaders/ground-light-pool.vert.glsl';
-import groundLightPoolFrag from '../shaders/ground-light-pool.frag.glsl';
+import { createGroundLightPoolMaterial } from '../shaders/ground-light-pool.tsl';
 import { AMBER, LIGHT_POOL_BRIGHT, COOL_BLUE, COOL_WHITE } from '../colors';
-import { useSceneContext } from '../../../shared/context';
+import { useSceneContext, getEffectT } from '../../../shared/context';
 
 export function GroundLightPool() {
-  const { togglesRef, hoverTRef } = useSceneContext();
+  const ctx = useSceneContext();
   const tmpColor1 = useMemo(() => new THREE.Color(), []);
   const tmpColor2 = useMemo(() => new THREE.Color(), []);
 
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: {
-      uColor: { value: AMBER.clone() },
-      uColorBright: { value: LIGHT_POOL_BRIGHT.clone() },
-    },
-    vertexShader: groundLightPoolVert,
-    fragmentShader: groundLightPoolFrag,
-  }), []);
+  const { material, uniforms } = useMemo(() => createGroundLightPoolMaterial(), []);
 
   useFrame(() => {
-    const colorT = togglesRef.current.colorTemp ? hoverTRef.current : 0;
+    const colorT = getEffectT(ctx, 'colorTemp');
     tmpColor1.copy(AMBER).lerp(COOL_BLUE, colorT);
-    material.uniforms.uColor.value.copy(tmpColor1);
+    uniforms.uColor.value.copy(tmpColor1);
     tmpColor2.copy(LIGHT_POOL_BRIGHT).lerp(COOL_WHITE, colorT);
-    material.uniforms.uColorBright.value.copy(tmpColor2);
+    uniforms.uColorBright.value.copy(tmpColor2);
   });
 
   return (
