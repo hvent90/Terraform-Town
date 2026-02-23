@@ -36,6 +36,7 @@ interface ConnectionMaterialEntry {
 
 export function ConnectionTraces() {
   const ctx = useSceneContext();
+  const groupRef = useRef<THREE.Group>(null);
   const prevConnectionsLen = useRef(0);
   const prevPositionsSize = useRef(0);
   const [version, setVersion] = useState(0);
@@ -109,23 +110,29 @@ export function ConnectionTraces() {
       setVersion(v => v + 1);
     }
 
+    const toggles = ctx.connectionTogglesRef.current;
+    const tracesOn = toggles.connectionTraces !== false;
+    const pulseOn = toggles.tracePulse !== false;
     const hoveredId = ctx.hoveredResourceIdRef.current;
     const selectedId = ctx.selectedResourceIdRef.current;
     const t = clock.getElapsedTime();
+
+    if (groupRef.current) groupRef.current.visible = tracesOn;
 
     for (const entry of materialEntries) {
       const isActive =
         entry.from === hoveredId || entry.to === hoveredId ||
         entry.from === selectedId || entry.to === selectedId;
-      entry.uniforms.uActive.value = isActive ? 1.0 : 0.0;
-      entry.uniforms.uTime.value = t;
+      const target = isActive ? 1.0 : 0.0;
+      entry.uniforms.uActive.value += (target - entry.uniforms.uActive.value) * 0.08;
+      entry.uniforms.uTime.value = pulseOn ? t : 0;
     }
   });
 
   if (segmentMeshes.length === 0) return null;
 
   return (
-    <group>
+    <group ref={groupRef}>
       {segmentMeshes.map((seg, i) => (
         <mesh
           key={i}
