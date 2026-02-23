@@ -1,3 +1,13 @@
 export { Visualization } from './Visualization';
-export { defaultTheme } from './themes/default';
-export type { Theme, Resource, Connection, TerraformState } from './types';
+export { StateSync } from './state/StateSync';
+export type {
+  TerraformState,
+  Resource,
+  Connection,
+  ResourceType,
+  ResourceState,
+  ConnectionType,
+  Theme,
+  Animation,
+  EasingFunction,
+} from './types';
