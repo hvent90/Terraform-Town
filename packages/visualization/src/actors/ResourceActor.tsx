@@ -1,4 +1,5 @@
 import { useTheme } from '../theme/ThemeProvider';
+import { ResourceTypeContext } from '../shared/context';
 
 export function ResourceActor({ type }: { type: string }) {
   const theme = useTheme();
@@ -8,11 +9,13 @@ export function ResourceActor({ type }: { type: string }) {
   const { Mesh, effects } = config;
 
   return (
-    <group>
-      <Mesh />
-      {Object.entries(effects).map(([state, fxList]) =>
-        fxList!.map((Fx, i) => <Fx key={`${state}-${i}`} />)
-      )}
-    </group>
+    <ResourceTypeContext.Provider value={type}>
+      <group>
+        <Mesh />
+        {Object.entries(effects).map(([state, fxList]) =>
+          fxList!.map((Fx, i) => <Fx key={`${state}-${i}`} />)
+        )}
+      </group>
+    </ResourceTypeContext.Provider>
   );
 }

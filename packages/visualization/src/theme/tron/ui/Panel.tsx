@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { PanelProps } from '../../../ui/components';
 import { ui } from '../colors';
 
-export function Panel({ title, collapsible, children }: PanelProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function Panel({ title, collapsible, defaultCollapsed, children }: PanelProps) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
 
   return (
     <div style={{

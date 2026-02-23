@@ -12,7 +12,7 @@ type EffectsPanelProps = {
 export function EffectsPanel({ effects, labels, hoverToggles, selectToggles, onToggleHover, onToggleSelect }: EffectsPanelProps) {
   const { Panel, EffectRow } = useThemedComponents();
   return (
-    <Panel title="Effects" collapsible>
+    <Panel title="Effects" collapsible defaultCollapsed>
       {[...effects].sort((a, b) => labels[a].localeCompare(labels[b])).map(key => (
         <EffectRow
           key={key}

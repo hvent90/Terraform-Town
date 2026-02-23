@@ -13,7 +13,7 @@ type PostProcessPanelProps = {
 export function PostProcessPanel({ title = 'Post Processing', params, labels, ranges, defaults, values, onChange }: PostProcessPanelProps) {
   const { Panel, Slider } = useThemedComponents();
   return (
-    <Panel title={title} collapsible>
+    <Panel title={title} collapsible defaultCollapsed>
       {params.map(key => (
         <Slider
           key={key}

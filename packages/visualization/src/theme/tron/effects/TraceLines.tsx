@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useContext } from 'react';
 import { createTraceMaterial } from '../shaders/trace.tsl';
 import { TRACE_COLOR, TRACE_WARM, TRACE_COOL } from '../colors';
 import { CUBE_SIZE } from '../../../shared/geometry';
-import { useSceneContext, getEffectT } from '../../../shared/context';
+import { useSceneContext, getEffectT, ResourceTypeContext } from '../../../shared/context';
 
 // @ts-ignore
 import GEIST_PIXEL_GRID from '../../../assets/fonts/GeistPixel-Grid.ttf';
@@ -39,6 +39,7 @@ function createTextTexture(text: string, color: string, fontSize = 64) {
 
 export function TraceLines() {
   const ctx = useSceneContext();
+  const resourceType = useContext(ResourceTypeContext);
   const pulseTimeRef = useRef(0);
   const selectPulseTimeRef = useRef(0);
   const tmpColor = useMemo(() => new THREE.Color(), []);
@@ -69,7 +70,8 @@ export function TraceLines() {
   // Load font async, then re-create texture
   useEffect(() => {
     loadLabelFont().then(() => {
-      const { texture, aspect } = createTextTexture('EC2', TRACE_COLOR, 64);
+      const label = resourceType.toUpperCase().replace('_', ' ');
+      const { texture, aspect } = createTextTexture(label, TRACE_COLOR, 64);
       const labelHeight = 0.45;
       const labelWidth = labelHeight * aspect;
       labelMesh.geometry.dispose();
@@ -78,7 +80,7 @@ export function TraceLines() {
       labelMat.opacity = 1;
       labelMat.needsUpdate = true;
     });
-  }, [labelMesh, labelMat]);
+  }, [labelMesh, labelMat, resourceType]);
 
   useFrame((_, delta) => {
     // Pulse
@@ -143,7 +145,7 @@ export function TraceLines() {
       <mesh material={borderMat} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[-half, 0, 0]}>
         <planeGeometry args={[borderLen, borderW]} />
       </mesh>
-      {/* EC2 label - canvas texture (WebGPU compatible) */}
+      {/* Resource type label */}
       <primitive
         object={labelMesh}
         position={[0, 0.225 - 0.04, -(half + 0.6)]}
