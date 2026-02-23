@@ -10,6 +10,7 @@ import { ResourceActor } from './actors/ResourceActor';
 import { GroundActor } from './actors/GroundActor';
 import { ConnectionActor } from './actors/ConnectionActor';
 import { EffectsPanel } from './ui/features/EffectsPanel';
+import { ConnectionsPanel } from './ui/features/ConnectionsPanel';
 import { PostProcessPanel } from './ui/features/PostProcessPanel';
 import { ResourceInspector } from './ui/features/ResourceInspector';
 import { ResourceTooltip } from './ui/features/ResourceTooltip';
@@ -23,6 +24,7 @@ import {
   DEFAULT_HOVER_TOGGLES, DEFAULT_SELECT_TOGGLES, DEFAULT_POST_PROCESS, DEFAULT_WATER,
   POST_PROCESS_RANGES, WATER_RANGES,
   DEFAULT_CONNECTION_TOGGLES,
+  ALL_CONNECTION_EFFECTS, CONNECTION_LABELS,
 } from './theme/tron/effects';
 
 const DEFAULT_STATE: TerraformState = {
@@ -328,6 +330,14 @@ export default function App({ terraformState }: AppProps) {
             values={waterValues}
             onChange={updateWater}
           />
+          {connections.length > 0 && (
+            <ConnectionsPanel
+              effects={ALL_CONNECTION_EFFECTS}
+              labels={CONNECTION_LABELS}
+              toggles={connectionToggles}
+              onToggle={(key) => setConnectionToggles(prev => ({ ...prev, [key]: !prev[key] }))}
+            />
+          )}
         </div>
 
         <ResourceInspector
