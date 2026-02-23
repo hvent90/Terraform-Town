@@ -5,13 +5,15 @@ import { WebGPURenderer } from 'three/webgpu';
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { ThemeProvider, useTheme } from './theme/ThemeProvider';
 import { tronTheme } from './theme/tron';
-import { SceneContext, type SceneContextType } from './shared/context';
+import { SceneContext, ResourceIdContext, type SceneContextType } from './shared/context';
 import { ResourceActor } from './actors/ResourceActor';
 import { GroundActor } from './actors/GroundActor';
 import { EffectsPanel } from './ui/features/EffectsPanel';
 import { PostProcessPanel } from './ui/features/PostProcessPanel';
 import { ResourceInspector } from './ui/features/ResourceInspector';
 import { ResourceTooltip } from './ui/features/ResourceTooltip';
+import { TerraformInput } from './ui/features/TerraformInput';
+import { parseHcl } from './state/parseHcl';
 import { ec2Resource } from './resources/ec2';
 import type { TerraformState, Resource } from './types';
 import {
@@ -41,7 +43,14 @@ const STATE_COLORS: Record<string, string> = {
 };
 
 function themeKey(type: string): string {
-  const map: Record<string, string> = { instance: 'ec2' };
+  const map: Record<string, string> = {
+    instance: 'ec2',
+    vpc: 'vpc',
+    subnet: 'subnet',
+    security_group: 'security_group',
+    s3_bucket: 's3_bucket',
+    iam_role: 'iam_role',
+  };
   return map[type] ?? 'ec2';
 }
 
@@ -108,9 +117,11 @@ function Scene({ isOrtho, resources }: { isOrtho: boolean; resources: Resource[]
           ? [resource.position.x, resource.position.y, resource.position.z] as [number, number, number]
           : gridPosition(i, resources.length);
         return (
-          <group key={resource.id} position={pos}>
-            <ResourceActor type={themeKey(resource.type)} />
-          </group>
+          <ResourceIdContext.Provider key={resource.id} value={resource.id}>
+            <group position={pos}>
+              <ResourceActor type={themeKey(resource.type)} />
+            </group>
+          </ResourceIdContext.Provider>
         );
       })}
       <GroundActor />
@@ -125,16 +136,33 @@ export interface AppProps {
 }
 
 export default function App({ terraformState }: AppProps) {
-  const state = terraformState ?? DEFAULT_STATE;
+  const [generatedState, setGeneratedState] = useState<TerraformState | null>(null);
+  const state = generatedState ?? terraformState ?? DEFAULT_STATE;
   const resources = state.resources;
-  const activeResource = resources[0];
+
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
+  const [hoveredResourceId, setHoveredResourceId] = useState<string | null>(null);
+  const selected = selectedResourceId !== null;
+  const activeResource = selectedResourceId
+    ? resources.find(r => r.id === selectedResourceId) ?? null
+    : null;
+  const tooltipResource = hoveredResourceId
+    ? resources.find(r => r.id === hoveredResourceId) ?? null
+    : null;
 
   const [isOrtho, setIsOrtho] = useState(true);
   const [hoverToggles, setHoverToggles] = useState<Record<string, boolean>>({ ...DEFAULT_HOVER_TOGGLES });
-  const [selected, setSelected] = useState(false);
   const [selectToggles, setSelectToggles] = useState<Record<string, boolean>>({ ...DEFAULT_SELECT_TOGGLES });
   const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
   const [waterValues, setWaterValues] = useState<Record<string, number>>({ ...DEFAULT_WATER });
+
+  const handleGenerate = useCallback((hcl: string) => {
+    const parsed = parseHcl(hcl);
+    if (parsed.resources.length > 0) {
+      setGeneratedState(parsed);
+      setSelectedResourceId(null);
+    }
+  }, []);
 
   const togglesRef = useRef(hoverToggles);
   togglesRef.current = hoverToggles;
@@ -153,8 +181,12 @@ export default function App({ terraformState }: AppProps) {
   waterRef.current = waterValues;
 
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const onSelect = useCallback(() => setSelected(prev => !prev), []);
-  const onDeselect = useCallback(() => setSelected(false), []);
+  const onSelect = useCallback((resourceId: string) => {
+    setSelectedResourceId(prev => prev === resourceId ? null : resourceId);
+  }, []);
+  const onDeselect = useCallback(() => setSelectedResourceId(null), []);
+
+  const setHoveredResourceIdCb = useCallback((id: string | null) => setHoveredResourceId(id), []);
 
   const sceneCtx = useMemo<SceneContextType>(() => ({
     togglesRef,
@@ -164,6 +196,7 @@ export default function App({ terraformState }: AppProps) {
     selectedTRef,
     onSelect,
     onDeselect,
+    setHoveredResourceId: setHoveredResourceIdCb,
     tooltipRef,
     postProcessRef,
     waterRef,
@@ -194,6 +227,7 @@ export default function App({ terraformState }: AppProps) {
 
   const inspectorSections = activeResource ? buildInspectorSections(activeResource) : [];
   const statusColor = activeResource ? (STATE_COLORS[activeResource.state] ?? '#44ff88') : '#44ff88';
+  const tooltipStatusColor = tooltipResource ? (STATE_COLORS[tooltipResource.state] ?? '#44ff88') : '#44ff88';
 
   return (
     <ThemeProvider theme={tronTheme}>
@@ -228,9 +262,9 @@ export default function App({ terraformState }: AppProps) {
           }}
         >
           <ResourceTooltip
-            label={activeResource?.name ?? ''}
-            status={activeResource?.state ?? ''}
-            statusColor={statusColor}
+            label={tooltipResource?.name ?? ''}
+            status={tooltipResource?.state ?? ''}
+            statusColor={tooltipStatusColor}
           />
         </div>
 
@@ -276,6 +310,8 @@ export default function App({ terraformState }: AppProps) {
           sections={inspectorSections}
           footer="terraform state"
         />
+
+        <TerraformInput onGenerate={handleGenerate} />
       </div>
     </ThemeProvider>
   );

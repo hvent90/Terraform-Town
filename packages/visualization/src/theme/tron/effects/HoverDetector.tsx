@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useRef, useContext } from 'react';
 import { CUBE_SIZE, CUBE_Y } from '../../../shared/geometry';
-import { useSceneContext } from '../../../shared/context';
+import { useSceneContext, ResourceIdContext } from '../../../shared/context';
 
 const _projVec = new THREE.Vector3();
 
 export function HoverDetector() {
-  const { hoverTRef, selectedRef, selectedTRef, onSelect, onDeselect, tooltipRef } = useSceneContext();
+  const { hoverTRef, selectedRef, selectedTRef, onSelect, onDeselect, setHoveredResourceId, tooltipRef } = useSceneContext();
+  const resourceId = useContext(ResourceIdContext);
   const hoveredRef = useRef(false);
 
   useFrame(({ camera, gl }, delta) => {
@@ -33,9 +34,9 @@ export function HoverDetector() {
 
   return (
     <mesh
-      onPointerEnter={() => { hoveredRef.current = true; }}
-      onPointerLeave={() => { hoveredRef.current = false; }}
-      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      onPointerEnter={() => { hoveredRef.current = true; setHoveredResourceId(resourceId); }}
+      onPointerLeave={() => { hoveredRef.current = false; setHoveredResourceId(null); }}
+      onClick={(e) => { e.stopPropagation(); onSelect(resourceId); }}
       onPointerMissed={() => onDeselect()}
       position={[0, CUBE_Y, 0]}
     >

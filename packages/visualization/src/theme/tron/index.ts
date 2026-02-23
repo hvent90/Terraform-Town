@@ -31,6 +31,46 @@ export const tronTheme: Theme = {
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
     },
+    vpc: {
+      Mesh: CubeMesh,
+      effects: {
+        idle: [TraceLines],
+        hover: [HoverDetector],
+        selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
+      },
+    },
+    subnet: {
+      Mesh: CubeMesh,
+      effects: {
+        idle: [TraceLines],
+        hover: [HoverDetector],
+        selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
+      },
+    },
+    security_group: {
+      Mesh: CubeMesh,
+      effects: {
+        idle: [TraceLines],
+        hover: [HoverDetector],
+        selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
+      },
+    },
+    s3_bucket: {
+      Mesh: CubeMesh,
+      effects: {
+        idle: [TraceLines],
+        hover: [HoverDetector],
+        selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
+      },
+    },
+    iam_role: {
+      Mesh: CubeMesh,
+      effects: {
+        idle: [TraceLines],
+        hover: [HoverDetector],
+        selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
+      },
+    },
   },
   ground: {
     Mesh: ReflectiveGround,

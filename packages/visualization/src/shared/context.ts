@@ -6,14 +6,17 @@ export type SceneContextType = {
   selectTogglesRef: React.MutableRefObject<Record<string, boolean>>;
   selectedRef: React.MutableRefObject<boolean>;
   selectedTRef: React.MutableRefObject<number>;
-  onSelect: () => void;
+  onSelect: (resourceId: string) => void;
   onDeselect: () => void;
+  setHoveredResourceId: (id: string | null) => void;
   tooltipRef: React.RefObject<HTMLDivElement | null>;
   postProcessRef: React.MutableRefObject<Record<string, number>>;
   waterRef: React.MutableRefObject<Record<string, number>>;
 };
 
 export const SceneContext = createContext<SceneContextType>(null!);
+
+export const ResourceIdContext = createContext<string>('');
 
 export function useSceneContext() {
   return useContext(SceneContext);
