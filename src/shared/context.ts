@@ -9,6 +9,7 @@ export type SceneContextType = {
   onSelect: () => void;
   onDeselect: () => void;
   tooltipRef: React.RefObject<HTMLDivElement | null>;
+  postProcessRef: React.MutableRefObject<Record<string, number>>;
 };
 
 export const SceneContext = createContext<SceneContextType>(null!);

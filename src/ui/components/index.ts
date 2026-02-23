@@ -6,3 +6,4 @@ export type { TooltipProps } from './Tooltip.types';
 export type { SlidePanelProps, SlidePanelSide } from './SlidePanel.types';
 export type { DataTableProps, DataTableRow } from './DataTable.types';
 export type { SectionHeaderProps } from './SectionHeader.types';
+export type { SliderProps } from './Slider.types';

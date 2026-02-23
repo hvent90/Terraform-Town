@@ -18,6 +18,7 @@ import { Tooltip } from './ui/Tooltip';
 import { SlidePanel } from './ui/SlidePanel';
 import { DataTable } from './ui/DataTable';
 import { SectionHeader } from './ui/SectionHeader';
+import { Slider } from './ui/Slider';
 
 export const tronTheme: Theme = {
   resources: {
@@ -48,6 +49,7 @@ export const tronTheme: Theme = {
       SlidePanel,
       DataTable,
       SectionHeader,
+      Slider,
     },
   },
 };

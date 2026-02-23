@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { OrthographicCamera, PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { WebGPURenderer } from 'three/webgpu';
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { ThemeProvider, useTheme } from './theme/ThemeProvider';
 import { tronTheme } from './theme/tron';
@@ -8,14 +9,16 @@ import { SceneContext, type SceneContextType } from './shared/context';
 import { ResourceActor } from './actors/ResourceActor';
 import { GroundActor } from './actors/GroundActor';
 import { EffectsPanel } from './ui/features/EffectsPanel';
+import { PostProcessPanel } from './ui/features/PostProcessPanel';
 import { ResourceInspector } from './ui/features/ResourceInspector';
 import { ResourceTooltip } from './ui/features/ResourceTooltip';
 import { CameraToggle } from './ui/features/CameraToggle';
 import { ec2Resource } from './resources/ec2';
 import {
-  ALL_EFFECTS, ALL_SELECT_EFFECTS,
-  EFFECT_LABELS, SELECT_EFFECT_LABELS,
-  DEFAULT_TOGGLES, DEFAULT_SELECT_TOGGLES,
+  ALL_EFFECTS, ALL_SELECT_EFFECTS, ALL_POST_PROCESS,
+  EFFECT_LABELS, SELECT_EFFECT_LABELS, POST_PROCESS_LABELS,
+  DEFAULT_TOGGLES, DEFAULT_SELECT_TOGGLES, DEFAULT_POST_PROCESS,
+  POST_PROCESS_RANGES,
 } from './theme/tron/effects';
 
 function Scene({ isOrtho }: { isOrtho: boolean }) {
@@ -64,6 +67,7 @@ export default function App() {
   const [toggles, setToggles] = useState<Record<string, boolean>>({ ...DEFAULT_TOGGLES });
   const [selected, setSelected] = useState(false);
   const [selectToggles, setSelectToggles] = useState<Record<string, boolean>>({ ...DEFAULT_SELECT_TOGGLES });
+  const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
 
   const togglesRef = useRef(toggles);
   togglesRef.current = toggles;
@@ -74,6 +78,9 @@ export default function App() {
   const selectedRef = useRef(false);
   selectedRef.current = selected;
   const selectedTRef = useRef(0);
+
+  const postProcessRef = useRef(postProcessValues);
+  postProcessRef.current = postProcessValues;
 
   const tooltipRef = useRef<HTMLDivElement>(null);
   const onSelect = useCallback(() => setSelected(true), []);
@@ -88,6 +95,7 @@ export default function App() {
     onSelect,
     onDeselect,
     tooltipRef,
+    postProcessRef,
   }), []);
 
   const toggleCamera = useCallback(() => setIsOrtho(prev => !prev), []);
@@ -96,6 +104,9 @@ export default function App() {
   }, []);
   const toggleSelectEffect = useCallback((key: string) => {
     setSelectToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+  const updatePostProcess = useCallback((key: string, val: number) => {
+    setPostProcessValues(prev => ({ ...prev, [key]: val }));
   }, []);
 
   useEffect(() => {
@@ -110,7 +121,16 @@ export default function App() {
   return (
     <ThemeProvider theme={tronTheme}>
       <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
-        <Canvas dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.6 }}>
+        <Canvas
+          dpr={[1, 2]}
+          gl={async (props) => {
+            const renderer = new WebGPURenderer({ canvas: props.canvas as HTMLCanvasElement, antialias: true });
+            await renderer.init();
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 0.6;
+            return renderer;
+          }}
+        >
           <color attach="background" args={['#010103']} />
           <ThemeProvider theme={tronTheme}>
             <SceneContext.Provider value={sceneCtx}>
@@ -154,6 +174,14 @@ export default function App() {
             labels={SELECT_EFFECT_LABELS}
             toggles={selectToggles}
             onToggle={toggleSelectEffect}
+          />
+          <PostProcessPanel
+            params={ALL_POST_PROCESS}
+            labels={POST_PROCESS_LABELS}
+            ranges={POST_PROCESS_RANGES}
+            defaults={DEFAULT_POST_PROCESS}
+            values={postProcessValues}
+            onChange={updatePostProcess}
           />
         </div>
 

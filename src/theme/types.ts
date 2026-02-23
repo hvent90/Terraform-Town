@@ -8,6 +8,7 @@ import type {
   SlidePanelProps,
   DataTableProps,
   SectionHeaderProps,
+  SliderProps,
 } from '../ui/components';
 
 export type Theme = {
@@ -31,6 +32,7 @@ export type Theme = {
       SlidePanel: React.ComponentType<SlidePanelProps>;
       DataTable: React.ComponentType<DataTableProps>;
       SectionHeader: React.ComponentType<SectionHeaderProps>;
+      Slider: React.ComponentType<SliderProps>;
     };
   };
 };
