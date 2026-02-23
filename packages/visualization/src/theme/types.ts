@@ -21,6 +21,10 @@ export type Theme = {
     Mesh: React.ComponentType;
     effects: Partial<Record<ActorState, React.ComponentType[]>>;
   };
+  connections?: {
+    Mesh: React.ComponentType;
+    effects: Partial<Record<ActorState, React.ComponentType[]>>;
+  };
   Lights: React.ComponentType;
   PostProcessing: React.ComponentType;
   ui: {

@@ -8,6 +8,7 @@ import { tronTheme } from './theme/tron';
 import { SceneContext, ResourceIdContext, type SceneContextType } from './shared/context';
 import { ResourceActor } from './actors/ResourceActor';
 import { GroundActor } from './actors/GroundActor';
+import { ConnectionActor } from './actors/ConnectionActor';
 import { EffectsPanel } from './ui/features/EffectsPanel';
 import { PostProcessPanel } from './ui/features/PostProcessPanel';
 import { ResourceInspector } from './ui/features/ResourceInspector';
@@ -123,6 +124,7 @@ function Scene({ isOrtho, resources, positions }: { isOrtho: boolean; resources:
         );
       })}
       <GroundActor />
+      <ConnectionActor />
       <Lights />
       <PostProcessing />
     </>
