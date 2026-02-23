@@ -8,6 +8,7 @@ import { DataStreamParticles } from './effects/DataStreamParticles';
 import { GroundConnectionBeam } from './effects/GroundConnectionBeam';
 import { GroundParticles } from './effects/GroundParticles';
 import { GroundLightPool } from './effects/GroundLightPool';
+import { ConnectionTraces } from './effects/ConnectionTraces';
 import { SceneLights } from './SceneLights';
 import { PostProcessing } from './PostProcessing';
 import { ToggleSwitch } from './ui/ToggleSwitch';
@@ -77,6 +78,10 @@ export const tronTheme: Theme = {
     effects: {
       idle: [GroundParticles, GroundLightPool],
     },
+  },
+  connections: {
+    Mesh: ConnectionTraces,
+    effects: {},
   },
   Lights: SceneLights,
   PostProcessing: PostProcessing,

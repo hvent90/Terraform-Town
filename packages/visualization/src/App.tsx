@@ -22,6 +22,7 @@ import {
   EFFECT_LABELS, POST_PROCESS_LABELS, WATER_LABELS,
   DEFAULT_HOVER_TOGGLES, DEFAULT_SELECT_TOGGLES, DEFAULT_POST_PROCESS, DEFAULT_WATER,
   POST_PROCESS_RANGES, WATER_RANGES,
+  DEFAULT_CONNECTION_TOGGLES,
 } from './theme/tron/effects';
 
 const DEFAULT_STATE: TerraformState = {
@@ -156,6 +157,7 @@ export default function App({ terraformState }: AppProps) {
   const [selectToggles, setSelectToggles] = useState<Record<string, boolean>>({ ...DEFAULT_SELECT_TOGGLES });
   const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
   const [waterValues, setWaterValues] = useState<Record<string, number>>({ ...DEFAULT_WATER });
+  const [connectionToggles, setConnectionToggles] = useState<Record<string, boolean>>({ ...DEFAULT_CONNECTION_TOGGLES });
 
   const handleGenerate = useCallback((hcl: string) => {
     const parsed = parseHcl(hcl);
@@ -198,6 +200,7 @@ export default function App({ terraformState }: AppProps) {
   const resourcePositionsRef = useRef<Map<string, [number, number, number]>>(positions);
   resourcePositionsRef.current = positions;
   const connectionTogglesRef = useRef<Record<string, boolean>>({});
+  connectionTogglesRef.current = connectionToggles;
   const hoveredResourceIdRef = useRef<string | null>(null);
   hoveredResourceIdRef.current = hoveredResourceId;
   const selectedResourceIdRef = useRef<string | null>(null);

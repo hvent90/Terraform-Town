@@ -96,3 +96,22 @@ export const DEFAULT_WATER: Record<WaterKey, number> = {
 };
 
 export const ALL_WATER: WaterKey[] = Object.keys(WATER_LABELS) as WaterKey[];
+
+// Connection effect keys
+export type ConnectionEffectKey = 'connectionTraces' | 'tracePulse' | 'traceParticles' | 'traceLabels';
+
+export const CONNECTION_LABELS: Record<ConnectionEffectKey, string> = {
+  connectionTraces: 'Traces',
+  tracePulse: 'Pulse',
+  traceParticles: 'Particles',
+  traceLabels: 'Labels',
+};
+
+export const ALL_CONNECTION_EFFECTS: ConnectionEffectKey[] = Object.keys(CONNECTION_LABELS) as ConnectionEffectKey[];
+
+export const DEFAULT_CONNECTION_TOGGLES: Record<ConnectionEffectKey, boolean> = {
+  connectionTraces: true,
+  tracePulse: true,
+  traceParticles: false,
+  traceLabels: false,
+};
