@@ -159,6 +159,23 @@ export function parseHcl(src: string): TerraformState {
     };
   });
 
+  // Parent attribute keys, ordered by specificity (most specific first)
+  const PARENT_KEYS = ['subnet_id', 'vpc_id'];
+
+  // Detect parentId from container references
+  for (const resource of resources) {
+    for (const key of PARENT_KEYS) {
+      const val = resource.attributes[key];
+      if (typeof val === 'string') {
+        const match = val.match(/^([a-z_]+\.[a-z_][a-z0-9_]*)(?:\.[a-z_]+)?$/);
+        if (match && allAddresses.has(match[1])) {
+          resource.parentId = match[1];
+          break; // most specific wins
+        }
+      }
+    }
+  }
+
   const connections: Connection[] = [];
   for (const resource of resources) {
     const refs = findReferences(resource.attributes, allAddresses);
