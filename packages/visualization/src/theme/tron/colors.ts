@@ -18,6 +18,40 @@ export const COOL_WHITE = new THREE.Color(0xddeeff);
 export const FACE_INNER_COOL = new THREE.Color(0x88bbff);
 export const TRACE_COOL = new THREE.Color(0x4488ff);
 
+// Per-type color palettes
+type ResourceColorSet = {
+  faceInner: THREE.Color;
+  faceEdge: THREE.Color;
+  edge: THREE.Color;
+  halo: THREE.Color;
+  trace: THREE.Color;
+};
+
+function makeColorSet(base: number): ResourceColorSet {
+  const b = new THREE.Color(base);
+  const hsl = { h: 0, s: 0, l: 0 };
+  b.getHSL(hsl);
+  return {
+    faceInner: new THREE.Color().setHSL(hsl.h, hsl.s * 0.8, Math.min(hsl.l + 0.15, 0.85)),
+    faceEdge: new THREE.Color().setHSL(hsl.h, hsl.s * 0.4, 0.92),
+    edge: new THREE.Color().setHSL(hsl.h, hsl.s, Math.min(hsl.l + 0.05, 0.75)),
+    halo: new THREE.Color().setHSL(hsl.h, hsl.s * 0.8, Math.min(hsl.l + 0.1, 0.8)),
+    trace: new THREE.Color(base),
+  };
+}
+
+export const RESOURCE_COLORS: Record<string, ResourceColorSet> = {
+  ec2: makeColorSet(0xff8822),
+  vpc: makeColorSet(0x4488ff),
+  subnet: makeColorSet(0x44ddaa),
+  security_group: makeColorSet(0xff4466),
+  s3_bucket: makeColorSet(0x44ff88),
+  iam_role: makeColorSet(0xaa44ff),
+  lambda: makeColorSet(0x44ddff),
+};
+
+export const DEFAULT_RESOURCE_COLORS = RESOURCE_COLORS['ec2'];
+
 // Status
 export const STATUS_GREEN = new THREE.Color(0x44ff88);
 export const STATUS_GREEN_BRIGHT = new THREE.Color(0x88ffbb);

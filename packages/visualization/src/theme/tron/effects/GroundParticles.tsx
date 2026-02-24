@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useMemo } from 'react';
+import { useMemo, useContext } from 'react';
 import { createGroundParticlesMaterial } from '../shaders/ground-particles.tsl';
-import { AMBER_WARM, COOL_BLUE_BRIGHT } from '../colors';
-import { useSceneContext, getEffectT } from '../../../shared/context';
+import { AMBER_WARM, COOL_BLUE_BRIGHT, RESOURCE_COLORS, DEFAULT_RESOURCE_COLORS } from '../colors';
+import { useSceneContext, getEffectT, ResourceTypeContext } from '../../../shared/context';
 
 export function GroundParticles() {
   const ctx = useSceneContext();
+  const resourceType = useContext(ResourceTypeContext);
+  const typeColors = resourceType ? (RESOURCE_COLORS[resourceType] ?? DEFAULT_RESOURCE_COLORS) : null;
   const tmpColor = useMemo(() => new THREE.Color(), []);
   const particleCount = 3000;
 
@@ -55,10 +57,14 @@ export function GroundParticles() {
     // Particle attraction
     uniforms.uHover.value = getEffectT(ctx, 'particleAttract');
 
-    // Color temp
-    const colorT = getEffectT(ctx, 'colorTemp');
-    tmpColor.copy(AMBER_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
-    uniforms.uColor.value.copy(tmpColor);
+    // Color: use resource trace color when inside a resource actor, otherwise color temp
+    if (typeColors) {
+      uniforms.uColor.value.copy(typeColors.trace);
+    } else {
+      const colorT = getEffectT(ctx, 'colorTemp');
+      tmpColor.copy(AMBER_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
+      uniforms.uColor.value.copy(tmpColor);
+    }
   });
 
   return <mesh material={material} geometry={geometry} />;

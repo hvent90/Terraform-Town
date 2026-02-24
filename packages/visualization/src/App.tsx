@@ -1,5 +1,4 @@
 import { Canvas } from '@react-three/fiber';
-import { OrthographicCamera, PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -9,6 +8,10 @@ import { SceneContext, ResourceIdContext, type SceneContextType } from './shared
 import { ResourceActor } from './actors/ResourceActor';
 import { GroundActor } from './actors/GroundActor';
 import { ConnectionActor } from './actors/ConnectionActor';
+import { OrbitCameraController } from './camera/OrbitCameraController';
+import { MapCameraController } from './camera/MapCameraController';
+import { FocusCameraController } from './camera/FocusCameraController';
+import type { CameraMode } from './camera';
 import { EffectsPanel } from './ui/features/EffectsPanel';
 import { ConnectionsPanel } from './ui/features/ConnectionsPanel';
 import { PostProcessPanel } from './ui/features/PostProcessPanel';
@@ -16,6 +19,8 @@ import { ResourceInspector } from './ui/features/ResourceInspector';
 import { ResourceTooltip } from './ui/features/ResourceTooltip';
 import { TerraformInput } from './ui/features/TerraformInput';
 import { LayoutPanel } from './ui/features/LayoutPanel';
+import { LabelStylePanel } from './ui/features/LabelStylePanel';
+import { CameraPanel } from './ui/features/CameraPanel';
 import { parseHcl } from './state/parseHcl';
 import { computeLayout, type LayoutMode } from './layout';
 import { ec2Resource } from './resources/ec2';
@@ -28,6 +33,10 @@ import {
   DEFAULT_CONNECTION_TOGGLES,
   ALL_CONNECTION_EFFECTS, CONNECTION_LABELS,
 } from './theme/tron/effects';
+import {
+  ALL_LABEL_STYLES, LABEL_STYLE_LABELS, DEFAULT_LABEL_STYLE,
+  type LabelStyle,
+} from './theme/tron/labels';
 
 const DEFAULT_STATE: TerraformState = {
   resources: [{
@@ -85,27 +94,52 @@ function buildInspectorSections(resource: Resource) {
   return [{ title: 'Details', rows: mainRows }, ...objectSections];
 }
 
-function Scene({ isOrtho, resources, positions }: { isOrtho: boolean; resources: Resource[]; positions: Map<string, [number, number, number]> }) {
+type FocusTarget = {
+  selectedResourceId: string | null;
+  resourcePositionsRef: React.RefObject<Map<string, [number, number, number]>>;
+};
+
+type SceneProps = {
+  isOrtho: boolean;
+  cameraMode: CameraMode;
+  resources: Resource[];
+  positions: Map<string, [number, number, number]>;
+  focusTarget: FocusTarget | null;
+};
+
+function CameraController({ mode, isOrtho, focusTarget }: {
+  mode: CameraMode;
+  isOrtho: boolean;
+  focusTarget: FocusTarget | null;
+}) {
+  switch (mode) {
+    case 'map':
+      return <MapCameraController isOrtho={isOrtho} focusTarget={focusTarget} />;
+    case 'focus':
+      return (
+        <FocusCameraController
+          isOrtho={isOrtho}
+          selectedResourceId={focusTarget?.selectedResourceId ?? null}
+          resourcePositionsRef={focusTarget?.resourcePositionsRef ?? { current: new Map() }}
+        />
+      );
+    default:
+      return <OrbitCameraController isOrtho={isOrtho} focusTarget={focusTarget} />;
+  }
+}
+
+function Scene({ isOrtho, cameraMode, resources, positions, focusTarget }: SceneProps) {
   const theme = useTheme();
   const Lights = theme.Lights;
   const PostProcessing = theme.PostProcessing;
 
   return (
     <>
-      {isOrtho ? (
-        <OrthographicCamera makeDefault position={[6, 6, 6]} zoom={80} near={-100} far={100} />
-      ) : (
-        <PerspectiveCamera makeDefault position={[0, 0.8, 4.5]} fov={32} near={0.1} far={100} />
-      )}
-      <OrbitControls
-        enablePan={false}
-        enableZoom={true}
-        enableDamping
-        dampingFactor={0.05}
-        maxPolarAngle={Math.PI / 2 - 0.05}
-        target={isOrtho ? [0, 0.3, 0] : [0, 0.5, 0]}
-        minDistance={isOrtho ? undefined : 2}
-        maxDistance={isOrtho ? undefined : 12}
+      <CameraController
+        key={cameraMode}
+        mode={cameraMode}
+        isOrtho={isOrtho}
+        focusTarget={focusTarget}
       />
       {resources.map((resource) => {
         const pos = positions.get(resource.id) ?? [0, 0, 0];
@@ -146,12 +180,15 @@ export default function App({ terraformState }: AppProps) {
     : null;
 
   const [isOrtho, setIsOrtho] = useState(true);
+  const [cameraMode, setCameraMode] = useState<CameraMode>('map');
+  const [focusOnClick, setFocusOnClick] = useState(true);
   const [hoverToggles, setHoverToggles] = useState<Record<string, boolean>>({ ...DEFAULT_HOVER_TOGGLES });
   const [selectToggles, setSelectToggles] = useState<Record<string, boolean>>({ ...DEFAULT_SELECT_TOGGLES });
   const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
   const [waterValues, setWaterValues] = useState<Record<string, number>>({ ...DEFAULT_WATER });
   const [connectionToggles, setConnectionToggles] = useState<Record<string, boolean>>({ ...DEFAULT_CONNECTION_TOGGLES });
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('hierarchy');
+  const [labelStyle, setLabelStyle] = useState<LabelStyle>(DEFAULT_LABEL_STYLE);
 
   const handleGenerate = useCallback((hcl: string) => {
     const parsed = parseHcl(hcl);
@@ -200,6 +237,8 @@ export default function App({ terraformState }: AppProps) {
   hoveredResourceIdRef.current = hoveredResourceId;
   const selectedResourceIdRef = useRef<string | null>(null);
   selectedResourceIdRef.current = selectedResourceId;
+  const labelStyleRef = useRef<string>(labelStyle);
+  labelStyleRef.current = labelStyle;
 
   const tooltipRef = useRef<HTMLDivElement>(null);
   const onSelect = useCallback((resourceId: string) => {
@@ -225,6 +264,7 @@ export default function App({ terraformState }: AppProps) {
     connectionTogglesRef,
     hoveredResourceIdRef,
     selectedResourceIdRef,
+    labelStyleRef,
   }), []);
 
   const toggleCamera = useCallback(() => setIsOrtho(prev => !prev), []);
@@ -245,6 +285,9 @@ export default function App({ terraformState }: AppProps) {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'c' || e.key === 'C') toggleCamera();
       if (e.key === 'Escape') onDeselect();
+      if (e.key === '1') setCameraMode('orbit');
+      if (e.key === '2') setCameraMode('map');
+      if (e.key === '3') setCameraMode('focus');
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -270,7 +313,13 @@ export default function App({ terraformState }: AppProps) {
           <color attach="background" args={['#010103']} />
           <ThemeProvider theme={tronTheme}>
             <SceneContext.Provider value={sceneCtx}>
-              <Scene isOrtho={isOrtho} resources={resources} positions={positions} />
+              <Scene
+                isOrtho={isOrtho}
+                cameraMode={cameraMode}
+                resources={resources}
+                positions={positions}
+                focusTarget={(focusOnClick || cameraMode === 'focus') ? { selectedResourceId, resourcePositionsRef } : null}
+              />
             </SceneContext.Provider>
           </ThemeProvider>
         </Canvas>
@@ -330,7 +379,21 @@ export default function App({ terraformState }: AppProps) {
               onToggle={(key) => setConnectionToggles(prev => ({ ...prev, [key]: !prev[key] }))}
             />
           )}
+          <CameraPanel
+            mode={cameraMode}
+            onChangeMode={setCameraMode}
+            isOrtho={isOrtho}
+            onToggleOrtho={toggleCamera}
+            focusOnClick={focusOnClick}
+            onToggleFocusOnClick={() => setFocusOnClick(prev => !prev)}
+          />
           <LayoutPanel value={layoutMode} onChange={setLayoutMode} />
+          <LabelStylePanel
+            value={labelStyle}
+            onChange={(s) => setLabelStyle(s as LabelStyle)}
+            styles={ALL_LABEL_STYLES}
+            labels={LABEL_STYLE_LABELS}
+          />
         </div>
 
         <ResourceInspector

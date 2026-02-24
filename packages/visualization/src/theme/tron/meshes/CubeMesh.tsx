@@ -4,12 +4,12 @@ import { useMemo, useRef, useContext } from 'react';
 import { createFaceMaterial } from '../shaders/face.tsl';
 import { createEdgeMaterial } from '../shaders/edge.tsl';
 import {
-  FACE_INNER_WARM, WHITE_HOT, AMBER_WARM,
   COOL_BLUE_BRIGHT, FACE_INNER_COOL, COOL_WHITE,
-  HALO_WARM, STATUS_GREEN, STATUS_GREEN_BRIGHT,
+  STATUS_GREEN, STATUS_GREEN_BRIGHT,
+  RESOURCE_COLORS, DEFAULT_RESOURCE_COLORS,
 } from '../colors';
 import { CUBE_SIZE, CUBE_Y, faceConfigs, createHaloTexture } from '../../../shared/geometry';
-import { useSceneContext, getEffectT, ResourceIdContext } from '../../../shared/context';
+import { useSceneContext, getEffectT, ResourceIdContext, ResourceTypeContext } from '../../../shared/context';
 import { TraceBorders } from '../effects/TraceBorders';
 
 /* ─── CubeFace (shared material) ─── */
@@ -25,6 +25,8 @@ function CubeFace({ rot, pos, material }: { rot: [number, number, number]; pos: 
 export function CubeMesh() {
   const ctx = useSceneContext();
   const resourceId = useContext(ResourceIdContext);
+  const resourceType = useContext(ResourceTypeContext);
+  const typeColors = RESOURCE_COLORS[resourceType] ?? DEFAULT_RESOURCE_COLORS;
   const groupRef = useRef<THREE.Group>(null);
   const facesRef = useRef<THREE.Group>(null);
   const edgesRef = useRef<THREE.LineSegments>(null);
@@ -60,16 +62,16 @@ export function CubeMesh() {
     faceUni.uHover.value = getEffectT(ctx, 'faceOpacity', resourceId);
     faceUni.uSeparation.value = getEffectT(ctx, 'faceSeparation', resourceId) * 0.08;
 
-    // Color temp - face colors
+    // Color temp - face colors (type-specific warm → shared cool)
     const colorT = getEffectT(ctx, 'colorTemp', resourceId);
-    tmpColor1.copy(FACE_INNER_WARM).lerp(FACE_INNER_COOL, colorT);
+    tmpColor1.copy(typeColors.faceInner).lerp(FACE_INNER_COOL, colorT);
     faceUni.uColorInner.value.copy(tmpColor1);
-    tmpColor2.copy(WHITE_HOT).lerp(COOL_WHITE, colorT);
+    tmpColor2.copy(typeColors.faceEdge).lerp(COOL_WHITE, colorT);
     faceUni.uColorEdge.value.copy(tmpColor2);
 
     // Edge material - color temp, then edge intensify
     const edgeT = getEffectT(ctx, 'edgeIntensify', resourceId);
-    tmpColor1.copy(AMBER_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
+    tmpColor1.copy(typeColors.edge).lerp(COOL_BLUE_BRIGHT, colorT);
     edgeUni.uColorBot.value.copy(tmpColor1);
     edgeUni.uHover.value = edgeT;
     edgeUni.uEdgeIntensify.value = edgeT;
@@ -113,9 +115,11 @@ export function CubeMesh() {
     }
     if (haloMatRef.current) {
       haloMatRef.current.opacity = 0.15 + haloT * 0.25;
-      tmpColor3.copy(HALO_WARM).lerp(COOL_BLUE_BRIGHT, colorT);
+      tmpColor3.copy(typeColors.halo).lerp(COOL_BLUE_BRIGHT, colorT);
       haloMatRef.current.color.copy(tmpColor3);
     }
+
+
   });
 
   return (
@@ -136,7 +140,7 @@ export function CubeMesh() {
           <spriteMaterial
             ref={haloMatRef}
             map={haloTexture}
-            color={0xffaa55}
+            color={typeColors.halo}
             transparent
             blending={THREE.AdditiveBlending}
             depthWrite={false}

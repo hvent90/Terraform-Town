@@ -10,6 +10,16 @@ import (
 )
 
 func Provider() *schema.Provider {
+	resources := buildAllDynamicResources()
+
+	// Hand-written overrides
+	resources["aws_s3_bucket"] = resourceS3Bucket()
+	resources["aws_s3_bucket_policy"] = resourceS3BucketPolicy()
+	resources["aws_vpc"] = resourceVpc()
+	resources["aws_subnet"] = resourceSubnet()
+	resources["aws_security_group"] = resourceSecurityGroup()
+	resources["aws_instance"] = resourceInstance()
+
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"backend_url": {
@@ -25,14 +35,7 @@ func Provider() *schema.Provider {
 				Description: "The AWS region to use",
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{
-			"aws_s3_bucket":        resourceS3Bucket(),
-			"aws_s3_bucket_policy": resourceS3BucketPolicy(),
-			"aws_vpc":              resourceVpc(),
-			"aws_subnet":           resourceSubnet(),
-			"aws_security_group":   resourceSecurityGroup(),
-			"aws_instance":         resourceInstance(),
-		},
+		ResourcesMap:         resources,
 		ConfigureContextFunc: providerConfigure,
 	}
 }

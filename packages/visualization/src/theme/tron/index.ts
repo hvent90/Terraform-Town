@@ -1,5 +1,6 @@
 import type { Theme } from '../types';
 import { CubeMesh } from './meshes/CubeMesh';
+import { ResourceLabel } from './meshes/ResourceLabel';
 import { ReflectiveGround } from './meshes/ReflectiveGround';
 import { HoverDetector } from './effects/HoverDetector';
 // import { TraceLines } from './effects/TraceLines';
@@ -7,7 +8,6 @@ import { OrbitRing } from './effects/OrbitRing';
 import { DataStreamParticles } from './effects/DataStreamParticles';
 import { GroundConnectionBeam } from './effects/GroundConnectionBeam';
 import { GroundParticles } from './effects/GroundParticles';
-import { GroundLightPool } from './effects/GroundLightPool';
 import { ConnectionTraces } from './effects/ConnectionTraces';
 import { TraceParticles } from './effects/TraceParticles';
 import { SceneLights } from './SceneLights';
@@ -28,7 +28,7 @@ export const tronTheme: Theme = {
     ec2: {
       Mesh: CubeMesh,
       effects: {
-        idle: [],
+        idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -36,7 +36,7 @@ export const tronTheme: Theme = {
     vpc: {
       Mesh: CubeMesh,
       effects: {
-        idle: [],
+        idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -44,7 +44,7 @@ export const tronTheme: Theme = {
     subnet: {
       Mesh: CubeMesh,
       effects: {
-        idle: [],
+        idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -52,7 +52,7 @@ export const tronTheme: Theme = {
     security_group: {
       Mesh: CubeMesh,
       effects: {
-        idle: [],
+        idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -60,7 +60,7 @@ export const tronTheme: Theme = {
     s3_bucket: {
       Mesh: CubeMesh,
       effects: {
-        idle: [],
+        idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -68,7 +68,7 @@ export const tronTheme: Theme = {
     iam_role: {
       Mesh: CubeMesh,
       effects: {
-        idle: [],
+        idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -77,7 +77,7 @@ export const tronTheme: Theme = {
   ground: {
     Mesh: ReflectiveGround,
     effects: {
-      idle: [GroundParticles, GroundLightPool],
+      idle: [GroundParticles],
     },
   },
   connections: {

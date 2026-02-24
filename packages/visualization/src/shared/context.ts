@@ -17,6 +17,7 @@ export type SceneContextType = {
   connectionTogglesRef: React.MutableRefObject<Record<string, boolean>>;
   hoveredResourceIdRef: React.MutableRefObject<string | null>;
   selectedResourceIdRef: React.MutableRefObject<string | null>;
+  labelStyleRef: React.MutableRefObject<string>;
 };
 
 export const SceneContext = createContext<SceneContextType>(null!);

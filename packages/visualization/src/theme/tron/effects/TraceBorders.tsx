@@ -2,13 +2,15 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useContext } from 'react';
 import { createTraceMaterial } from '../shaders/trace.tsl';
-import { TRACE_WARM, TRACE_COOL } from '../colors';
+import { TRACE_COOL, RESOURCE_COLORS, DEFAULT_RESOURCE_COLORS } from '../colors';
 import { CUBE_SIZE } from '../../../shared/geometry';
-import { useSceneContext, getEffectT, ResourceIdContext } from '../../../shared/context';
+import { useSceneContext, getEffectT, ResourceIdContext, ResourceTypeContext } from '../../../shared/context';
 
 export function TraceBorders() {
   const ctx = useSceneContext();
   const resourceId = useContext(ResourceIdContext);
+  const resourceType = useContext(ResourceTypeContext);
+  const typeColors = RESOURCE_COLORS[resourceType] ?? DEFAULT_RESOURCE_COLORS;
   const pulseTimeRef = useRef(0);
   const selectPulseTimeRef = useRef(0);
   const tmpColor = useMemo(() => new THREE.Color(), []);
@@ -24,7 +26,7 @@ export function TraceBorders() {
     if (pulseT > 0.01) pulseTimeRef.current += delta * pulseT;
 
     const colorT = getEffectT(ctx, 'colorTemp', resourceId);
-    tmpColor.copy(TRACE_WARM).lerp(TRACE_COOL, colorT);
+    tmpColor.copy(typeColors.trace).lerp(TRACE_COOL, colorT);
 
     const selectTraceT = getEffectT(ctx, 'traceActivation', resourceId);
     if (selectTraceT > 0.01) selectPulseTimeRef.current += delta;
