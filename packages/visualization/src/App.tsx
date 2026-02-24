@@ -151,7 +151,7 @@ export default function App({ terraformState }: AppProps) {
   const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
   const [waterValues, setWaterValues] = useState<Record<string, number>>({ ...DEFAULT_WATER });
   const [connectionToggles, setConnectionToggles] = useState<Record<string, boolean>>({ ...DEFAULT_CONNECTION_TOGGLES });
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid');
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('hierarchy');
 
   const handleGenerate = useCallback((hcl: string) => {
     const parsed = parseHcl(hcl);
@@ -330,12 +330,6 @@ export default function App({ terraformState }: AppProps) {
               onToggle={(key) => setConnectionToggles(prev => ({ ...prev, [key]: !prev[key] }))}
             />
           )}
-        </div>
-
-        <div style={{
-          position: 'fixed', top: 16, right: 16, zIndex: 1000,
-          display: 'flex', flexDirection: 'column', gap: 8,
-        }}>
           <LayoutPanel value={layoutMode} onChange={setLayoutMode} />
         </div>
 

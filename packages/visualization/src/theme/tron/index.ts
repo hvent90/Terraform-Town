@@ -2,7 +2,7 @@ import type { Theme } from '../types';
 import { CubeMesh } from './meshes/CubeMesh';
 import { ReflectiveGround } from './meshes/ReflectiveGround';
 import { HoverDetector } from './effects/HoverDetector';
-import { TraceLines } from './effects/TraceLines';
+// import { TraceLines } from './effects/TraceLines';
 import { OrbitRing } from './effects/OrbitRing';
 import { DataStreamParticles } from './effects/DataStreamParticles';
 import { GroundConnectionBeam } from './effects/GroundConnectionBeam';
@@ -28,7 +28,7 @@ export const tronTheme: Theme = {
     ec2: {
       Mesh: CubeMesh,
       effects: {
-        idle: [TraceLines],
+        idle: [],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -36,7 +36,7 @@ export const tronTheme: Theme = {
     vpc: {
       Mesh: CubeMesh,
       effects: {
-        idle: [TraceLines],
+        idle: [],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -44,7 +44,7 @@ export const tronTheme: Theme = {
     subnet: {
       Mesh: CubeMesh,
       effects: {
-        idle: [TraceLines],
+        idle: [],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -52,7 +52,7 @@ export const tronTheme: Theme = {
     security_group: {
       Mesh: CubeMesh,
       effects: {
-        idle: [TraceLines],
+        idle: [],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -60,7 +60,7 @@ export const tronTheme: Theme = {
     s3_bucket: {
       Mesh: CubeMesh,
       effects: {
-        idle: [TraceLines],
+        idle: [],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },
@@ -68,7 +68,7 @@ export const tronTheme: Theme = {
     iam_role: {
       Mesh: CubeMesh,
       effects: {
-        idle: [TraceLines],
+        idle: [],
         hover: [HoverDetector],
         selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
       },

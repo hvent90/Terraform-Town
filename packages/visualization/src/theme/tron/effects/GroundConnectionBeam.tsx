@@ -1,18 +1,19 @@
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useContext } from 'react';
 import * as THREE from 'three';
 import { createGroundBeamMaterial } from '../shaders/ground-beam.tsl';
 import { CUBE_SIZE, CUBE_Y } from '../../../shared/geometry';
-import { useSceneContext, getEffectT } from '../../../shared/context';
+import { useSceneContext, getEffectT, ResourceIdContext } from '../../../shared/context';
 
 export function GroundConnectionBeam() {
   const ctx = useSceneContext();
+  const resourceId = useContext(ResourceIdContext);
   const meshRef = useRef<THREE.Mesh>(null);
 
   const { material, uniforms } = useMemo(() => createGroundBeamMaterial(), []);
 
   useFrame(({ clock }) => {
-    const t = getEffectT(ctx, 'groundBeam');
+    const t = getEffectT(ctx, 'groundBeam', resourceId);
     uniforms.uOpacity.value = t;
     uniforms.uTime.value = clock.getElapsedTime();
     if (meshRef.current) meshRef.current.visible = t > 0.01;

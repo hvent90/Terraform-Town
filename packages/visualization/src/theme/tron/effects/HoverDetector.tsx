@@ -7,20 +7,22 @@ import { useSceneContext, ResourceIdContext } from '../../../shared/context';
 const _projVec = new THREE.Vector3();
 
 export function HoverDetector() {
-  const { hoverTRef, selectedRef, selectedTRef, onSelect, onDeselect, setHoveredResourceId, tooltipRef } = useSceneContext();
+  const { hoverTMapRef, selectedTMapRef, selectedResourceIdRef, onSelect, onDeselect, setHoveredResourceId, tooltipRef } = useSceneContext();
   const resourceId = useContext(ResourceIdContext);
   const hoveredRef = useRef(false);
 
   useFrame(({ camera, gl }, delta) => {
-    const target = hoveredRef.current ? 1 : 0;
-    hoverTRef.current += (target - hoverTRef.current) * Math.min(1, delta * 25);
+    const hoverTarget = hoveredRef.current ? 1 : 0;
+    const prevHover = hoverTMapRef.current[resourceId] ?? 0;
+    hoverTMapRef.current[resourceId] = prevHover + (hoverTarget - prevHover) * Math.min(1, delta * 25);
 
-    const selectTarget = selectedRef.current ? 1 : 0;
-    selectedTRef.current += (selectTarget - selectedTRef.current) * Math.min(1, delta * 8);
+    const selectTarget = selectedResourceIdRef.current === resourceId ? 1 : 0;
+    const prevSelect = selectedTMapRef.current[resourceId] ?? 0;
+    selectedTMapRef.current[resourceId] = prevSelect + (selectTarget - prevSelect) * Math.min(1, delta * 8);
 
     // Project cube top-right to screen space for tooltip
     if (tooltipRef.current) {
-      const t = hoverTRef.current;
+      const t = hoverTMapRef.current[resourceId] ?? 0;
       _projVec.set(CUBE_SIZE * 0.5, CUBE_Y + CUBE_SIZE * 0.5, 0).project(camera);
       const canvas = gl.domElement;
       const x = (_projVec.x * 0.5 + 0.5) * canvas.clientWidth;

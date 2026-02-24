@@ -10,7 +10,7 @@ type LayoutPanelProps = {
 export function LayoutPanel({ value, onChange }: LayoutPanelProps) {
   const { Panel } = useThemedComponents();
   return (
-    <Panel title="Layout" collapsible>
+    <Panel title="Layout" collapsible defaultCollapsed>
       {ALL_LAYOUTS.map(mode => (
         <div
           key={mode}
