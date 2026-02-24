@@ -6,11 +6,11 @@ import { createApp } from "../src/index";
 
 describe("mock backend server", () => {
   let tempDir: string;
-  let app: ReturnType<typeof createApp>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), "server-test-"));
-    app = createApp(join(tempDir, "state.json"));
+    app = await createApp(join(tempDir, "state.json"));
   });
 
   afterEach(async () => {

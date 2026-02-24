@@ -1,28 +1,15 @@
 import { Hono } from "hono";
 import { StateStore } from "./state/store";
-import { createS3BucketHandler } from "./resources/s3-bucket";
-import { createS3BucketPolicyHandler } from "./resources/s3-bucket-policy";
-import { createVpcHandler } from "./resources/vpc";
-import { createSubnetHandler } from "./resources/subnet";
-import { createSecurityGroupHandler } from "./resources/security-group";
-import { createInstanceHandler } from "./resources/instance";
-import { createIamRoleHandler } from "./resources/iam-role";
+import { buildHandlerRegistry } from "./resources/registry";
 import type { ResourceHandler } from "./resources/types";
 import { validateRegion } from "./utils/validation";
 
-export function createApp(statePath: string) {
+export async function createApp(statePath: string) {
   const app = new Hono();
   const store = new StateStore(statePath);
 
-  const handlers: Record<string, ResourceHandler> = {
-    aws_s3_bucket: createS3BucketHandler(store),
-    aws_s3_bucket_policy: createS3BucketPolicyHandler(store),
-    aws_vpc: createVpcHandler(store),
-    aws_subnet: createSubnetHandler(store),
-    aws_security_group: createSecurityGroupHandler(store),
-    aws_instance: createInstanceHandler(store),
-    aws_iam_role: createIamRoleHandler(store),
-  };
+  const handlers: Record<string, ResourceHandler> =
+    await buildHandlerRegistry(store);
 
   // Provider configuration
   app.post("/provider/configure", async (c) => {
@@ -127,7 +114,7 @@ export function createApp(statePath: string) {
 }
 
 // Start server when run directly
-const app = createApp("./state.json");
+const app = await createApp("./state.json");
 
 export default {
   port: 3000,

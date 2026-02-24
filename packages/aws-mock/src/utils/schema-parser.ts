@@ -65,12 +65,30 @@ function parseAttributes(attrs: Record<string, SchemaAttribute>): AttributeInfo[
   }));
 }
 
-export async function parseResourceDefinition(resourceType: string): Promise<ResourceDefinition> {
-  const file = Bun.file(SCHEMA_PATH);
-  const schema = await file.json();
+// Cached schema loader — the 13MB JSON is read once and reused
+let cachedSchema: Record<string, unknown> | null = null;
 
-  const resourceSchemas = schema.provider_schemas[PROVIDER_KEY].resource_schemas;
-  const resource = resourceSchemas[resourceType];
+async function loadSchema(): Promise<Record<string, unknown>> {
+  if (cachedSchema) return cachedSchema;
+  const file = Bun.file(SCHEMA_PATH);
+  cachedSchema = await file.json();
+  return cachedSchema!;
+}
+
+function getResourceSchemas(schema: Record<string, unknown>): Record<string, unknown> {
+  return (schema as any).provider_schemas[PROVIDER_KEY].resource_schemas;
+}
+
+export async function getAllResourceTypes(): Promise<string[]> {
+  const schema = await loadSchema();
+  const resourceSchemas = getResourceSchemas(schema);
+  return Object.keys(resourceSchemas).sort();
+}
+
+export async function parseResourceDefinition(resourceType: string): Promise<ResourceDefinition> {
+  const schema = await loadSchema();
+  const resourceSchemas = getResourceSchemas(schema);
+  const resource = resourceSchemas[resourceType] as any;
 
   if (!resource) {
     throw new Error(`Unknown resource type: ${resourceType}`);
