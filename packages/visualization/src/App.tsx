@@ -15,7 +15,9 @@ import { PostProcessPanel } from './ui/features/PostProcessPanel';
 import { ResourceInspector } from './ui/features/ResourceInspector';
 import { ResourceTooltip } from './ui/features/ResourceTooltip';
 import { TerraformInput } from './ui/features/TerraformInput';
+import { LayoutPanel } from './ui/features/LayoutPanel';
 import { parseHcl } from './state/parseHcl';
+import { computeLayout, type LayoutMode } from './layout';
 import { ec2Resource } from './resources/ec2';
 import type { TerraformState, Resource, Connection } from './types';
 import {
@@ -56,17 +58,6 @@ function themeKey(type: string): string {
     iam_role: 'iam_role',
   };
   return map[type] ?? 'ec2';
-}
-
-function gridPosition(index: number, total: number): [number, number, number] {
-  if (total === 1) return [0, 0, 0];
-  const spacing = 2.5;
-  const cols = Math.ceil(Math.sqrt(total));
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  const offsetX = ((cols - 1) * spacing) / 2;
-  const offsetZ = ((Math.ceil(total / cols) - 1) * spacing) / 2;
-  return [col * spacing - offsetX, 0, row * spacing - offsetZ];
 }
 
 function buildInspectorSections(resource: Resource) {
@@ -160,6 +151,7 @@ export default function App({ terraformState }: AppProps) {
   const [postProcessValues, setPostProcessValues] = useState<Record<string, number>>({ ...DEFAULT_POST_PROCESS });
   const [waterValues, setWaterValues] = useState<Record<string, number>>({ ...DEFAULT_WATER });
   const [connectionToggles, setConnectionToggles] = useState<Record<string, boolean>>({ ...DEFAULT_CONNECTION_TOGGLES });
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid');
 
   const handleGenerate = useCallback((hcl: string) => {
     const parsed = parseHcl(hcl);
@@ -171,13 +163,11 @@ export default function App({ terraformState }: AppProps) {
 
   const togglesRef = useRef(hoverToggles);
   togglesRef.current = hoverToggles;
-  const hoverTRef = useRef(0);
+  const hoverTMapRef = useRef<Record<string, number>>({});
 
   const selectTogglesRef = useRef(selectToggles);
   selectTogglesRef.current = selectToggles;
-  const selectedRef = useRef(false);
-  selectedRef.current = selected;
-  const selectedTRef = useRef(0);
+  const selectedTMapRef = useRef<Record<string, number>>({});
 
   const postProcessRef = useRef(postProcessValues);
   postProcessRef.current = postProcessValues;
@@ -186,16 +176,19 @@ export default function App({ terraformState }: AppProps) {
   waterRef.current = waterValues;
 
   const positions = useMemo(() => {
-    const map = new Map<string, [number, number, number]>();
-    for (let i = 0; i < resources.length; i++) {
-      const r = resources[i];
-      const pos = r.position
-        ? [r.position.x, r.position.y, r.position.z] as [number, number, number]
-        : gridPosition(i, resources.length);
-      map.set(r.id, pos);
+    const hasOverrides = resources.some(r => r.position);
+    if (hasOverrides) {
+      const map = new Map<string, [number, number, number]>();
+      for (const r of resources) {
+        const pos = r.position
+          ? [r.position.x, r.position.y, r.position.z] as [number, number, number]
+          : [0, 0, 0] as [number, number, number];
+        map.set(r.id, pos);
+      }
+      return map;
     }
-    return map;
-  }, [resources]);
+    return computeLayout(layoutMode, resources, connections);
+  }, [resources, connections, layoutMode]);
 
   const connectionsRef = useRef<Connection[]>(connections);
   connectionsRef.current = connections;
@@ -218,10 +211,9 @@ export default function App({ terraformState }: AppProps) {
 
   const sceneCtx = useMemo<SceneContextType>(() => ({
     togglesRef,
-    hoverTRef,
+    hoverTMapRef,
     selectTogglesRef,
-    selectedRef,
-    selectedTRef,
+    selectedTMapRef,
     onSelect,
     onDeselect,
     setHoveredResourceId: setHoveredResourceIdCb,
@@ -338,6 +330,13 @@ export default function App({ terraformState }: AppProps) {
               onToggle={(key) => setConnectionToggles(prev => ({ ...prev, [key]: !prev[key] }))}
             />
           )}
+        </div>
+
+        <div style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 1000,
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
+          <LayoutPanel value={layoutMode} onChange={setLayoutMode} />
         </div>
 
         <ResourceInspector
