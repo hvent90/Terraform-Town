@@ -65,8 +65,11 @@ ${options.clientJs ? `<script type="module" src="./${options.clientJs}"></script
 
   function addClient(ws: WebSocket) {
     wsClients.add(ws);
-    ws.addEventListener('close', () => wsClients.delete(ws));
   }
 
-  return Object.assign(app, { broadcast, addClient, wsClients });
+  function removeClient(ws: WebSocket) {
+    wsClients.delete(ws);
+  }
+
+  return Object.assign(app, { broadcast, addClient, removeClient, wsClients });
 }

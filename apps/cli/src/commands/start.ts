@@ -63,7 +63,9 @@ export async function startCommand(options: { port?: string; state?: string }) {
         ws.send(JSON.stringify({ type: 'state', data: currentState }));
       },
       message() {},
-      close() {},
+      close(ws) {
+        app.removeClient(ws as unknown as WebSocket);
+      },
     },
   });
 
