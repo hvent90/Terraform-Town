@@ -8,6 +8,24 @@
         "bun-types": "^1.2.0",
       },
     },
+    "apps/cli": {
+      "name": "@terraform-town/cli",
+      "version": "0.0.1",
+      "bin": {
+        "tftown": "./src/index.ts",
+      },
+      "dependencies": {
+        "@terraform-town/visualization": "workspace:*",
+        "commander": "^13.0.0",
+        "hono": "^4.0.0",
+      },
+      "devDependencies": {
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "bun-types": "^1.3.9",
+        "typescript": "^5.5.3",
+      },
+    },
     "packages/aws-mock": {
       "name": "@terraform-town/aws-mock",
       "version": "0.0.1",
@@ -492,6 +510,8 @@
 
     "@terraform-town/aws-mock": ["@terraform-town/aws-mock@workspace:packages/aws-mock"],
 
+    "@terraform-town/cli": ["@terraform-town/cli@workspace:apps/cli"],
+
     "@terraform-town/editor": ["@terraform-town/editor@workspace:packages/editor"],
 
     "@terraform-town/visualization": ["@terraform-town/visualization@workspace:packages/visualization"],
@@ -649,6 +669,8 @@
     "combined-stream": ["combined-stream@1.0.8", "", { "dependencies": { "delayed-stream": "~1.0.0" } }, "sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg=="],
 
     "comma-separated-tokens": ["comma-separated-tokens@2.0.3", "", {}, "sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg=="],
+
+    "commander": ["commander@13.1.0", "", {}, "sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw=="],
 
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 

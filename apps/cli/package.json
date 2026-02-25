@@ -1,0 +1,23 @@
+{
+  "name": "@terraform-town/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": {
+    "tftown": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@terraform-town/visualization": "workspace:*",
+    "commander": "^13.0.0",
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "bun-types": "^1.3.9",
+    "typescript": "^5.5.3"
+  }
+}
