@@ -5,6 +5,7 @@ import { ResourceIdContext, ResourceTypeContext, useSceneContext } from '../../.
 import { RESOURCE_COLORS, DEFAULT_RESOURCE_COLORS } from '../colors';
 import { CUBE_SIZE } from '../../../shared/geometry';
 import type { LabelStyle } from '../labels';
+import { useFrustumVisible } from '../../../shared/useFrustumVisible';
 import fontUrl from '../../../assets/fonts/GeistPixel-Grid.ttf';
 
 const FONT_NAME = 'GeistPixel-Grid';
@@ -244,6 +245,7 @@ function createTexture(style: LabelStyle, text: string, color: THREE.Color): { t
 }
 
 export function ResourceLabel() {
+  const groupRef = useFrustumVisible();
   const ctx = useSceneContext();
   const resourceId = useContext(ResourceIdContext);
   const type = useContext(ResourceTypeContext);
@@ -282,38 +284,42 @@ export function ResourceLabel() {
 
   if (GROUND_STYLES.has(activeStyle)) {
     return (
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.01, CUBE_SIZE / 2 + 0.4]}
-      >
-        <planeGeometry args={[width, height]} />
-        <meshBasicMaterial
-          map={texture}
-          transparent
-          opacity={0.9}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+      <group ref={groupRef}>
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.01, CUBE_SIZE / 2 + 0.4]}
+        >
+          <planeGeometry args={[width, height]} />
+          <meshBasicMaterial
+            map={texture}
+            transparent
+            opacity={0.9}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
     );
   }
 
   if (BILLBOARD_STYLES.has(activeStyle)) {
     const pos = BILLBOARD_POSITIONS[activeStyle] ?? [0, 0, CUBE_SIZE / 2 + 0.4];
     return (
-      <sprite
-        position={pos}
-        scale={[width, height, 1]}
-      >
-        <spriteMaterial
-          ref={matRef}
-          map={texture}
-          transparent
-          opacity={activeStyle === 'ghost' ? 0.1 : 0.9}
-          depthWrite={false}
-          sizeAttenuation
-        />
-      </sprite>
+      <group ref={groupRef}>
+        <sprite
+          position={pos}
+          scale={[width, height, 1]}
+        >
+          <spriteMaterial
+            ref={matRef}
+            map={texture}
+            transparent
+            opacity={activeStyle === 'ghost' ? 0.1 : 0.9}
+            depthWrite={false}
+            sizeAttenuation
+          />
+        </sprite>
+      </group>
     );
   }
 

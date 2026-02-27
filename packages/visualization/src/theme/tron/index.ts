@@ -1,5 +1,4 @@
 import type { Theme } from '../types';
-import { CubeMesh } from './meshes/CubeMesh';
 import { ResourceLabel } from './meshes/ResourceLabel';
 import { ReflectiveGround } from './meshes/ReflectiveGround';
 import { HoverDetector } from './effects/HoverDetector';
@@ -23,10 +22,12 @@ import { SectionHeader } from './ui/SectionHeader';
 import { Slider } from './ui/Slider';
 import { EffectRow } from './ui/EffectRow';
 
+function NoopMesh() { return null; }
+
 export const tronTheme: Theme = {
   resources: {
     ec2: {
-      Mesh: CubeMesh,
+      Mesh: NoopMesh,
       effects: {
         idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
@@ -34,7 +35,7 @@ export const tronTheme: Theme = {
       },
     },
     vpc: {
-      Mesh: CubeMesh,
+      Mesh: NoopMesh,
       effects: {
         idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
@@ -42,7 +43,7 @@ export const tronTheme: Theme = {
       },
     },
     subnet: {
-      Mesh: CubeMesh,
+      Mesh: NoopMesh,
       effects: {
         idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
@@ -50,7 +51,7 @@ export const tronTheme: Theme = {
       },
     },
     security_group: {
-      Mesh: CubeMesh,
+      Mesh: NoopMesh,
       effects: {
         idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
@@ -58,7 +59,7 @@ export const tronTheme: Theme = {
       },
     },
     s3_bucket: {
-      Mesh: CubeMesh,
+      Mesh: NoopMesh,
       effects: {
         idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],
@@ -66,7 +67,15 @@ export const tronTheme: Theme = {
       },
     },
     iam_role: {
-      Mesh: CubeMesh,
+      Mesh: NoopMesh,
+      effects: {
+        idle: [ResourceLabel, GroundParticles],
+        hover: [HoverDetector],
+        selected: [OrbitRing, DataStreamParticles, GroundConnectionBeam],
+      },
+    },
+    unknown: {
+      Mesh: NoopMesh,
       effects: {
         idle: [ResourceLabel, GroundParticles],
         hover: [HoverDetector],

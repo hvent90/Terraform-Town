@@ -16,15 +16,18 @@ export function readStateFile(path: string): TerraformState {
     return EMPTY_STATE;
   }
 
-  // Raw .tfstate files have type and name as separate fields but no address.
-  // StateSync.parseState uses r.address || r.name for resource id, so we
-  // pre-compute the address as "${type}.${name}" to match terraform conventions.
+  // Raw .tfstate files store module, type, and name as separate fields.
+  // Build the full address (e.g. "module.foo.aws_iam_role.lambda") so each
+  // resource gets a unique id in the visualization.
   const normalized = {
     ...json,
-    resources: json.resources.map((r: any) => ({
-      ...r,
-      address: r.address || `${r.type}.${r.name}`,
-    })),
+    resources: json.resources.map((r: any) => {
+      const base = `${r.type}.${r.name}`;
+      return {
+        ...r,
+        address: r.address || (r.module ? `${r.module}.${base}` : base),
+      };
+    }),
   };
 
   const sync = new StateSync();

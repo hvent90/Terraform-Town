@@ -4,7 +4,7 @@ import {
 } from 'three/tsl';
 
 // Dynamic uniforms — updated per frame from waterRef
-export const uFalloffSpread = uniform(1.2);
+export const uFalloffSpread = uniform(0.005);
 export const uFalloffBrightness = uniform(0.85);
 export const uTurbulenceSpeed = uniform(0.6);
 export const uTurbulenceStrength = uniform(2.2);

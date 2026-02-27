@@ -40,7 +40,21 @@ function makeColorSet(base: number): ResourceColorSet {
   };
 }
 
-export const RESOURCE_COLORS: Record<string, ResourceColorSet> = {
+/** Generate a deterministic hue from a string (0–1 range). */
+function hashHue(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+  }
+  return ((h >>> 0) % 360) / 360;
+}
+
+function makeColorSetFromHue(hue: number, sat = 0.7, light = 0.55): ResourceColorSet {
+  const base = new THREE.Color().setHSL(hue, sat, light);
+  return makeColorSet(base.getHex());
+}
+
+const KNOWN_COLORS: Record<string, ResourceColorSet> = {
   ec2: makeColorSet(0xff8822),
   vpc: makeColorSet(0x4488ff),
   subnet: makeColorSet(0x44ddaa),
@@ -50,7 +64,21 @@ export const RESOURCE_COLORS: Record<string, ResourceColorSet> = {
   lambda: makeColorSet(0x44ddff),
 };
 
-export const DEFAULT_RESOURCE_COLORS = RESOURCE_COLORS['ec2'];
+/**
+ * Color lookup that auto-generates a deterministic palette for unknown
+ * service types based on a hash of the key string.
+ */
+export const RESOURCE_COLORS: Record<string, ResourceColorSet> = new Proxy(KNOWN_COLORS, {
+  get(target, prop: string) {
+    if (prop in target) return target[prop];
+    // Generate and cache a color set from the service name hash
+    const generated = makeColorSetFromHue(hashHue(prop));
+    target[prop] = generated;
+    return generated;
+  },
+});
+
+export const DEFAULT_RESOURCE_COLORS = makeColorSet(0x888888);
 
 // Status
 export const STATUS_GREEN = new THREE.Color(0x44ff88);

@@ -80,7 +80,7 @@ export const WATER_LABELS: Record<WaterKey, string> = {
 export const WATER_RANGES: Record<WaterKey, { min: number; max: number; step: number }> = {
   reflectionIntensity: { min: 0, max: 5, step: 0.1 },
   reflectionBlur: { min: 0, max: 0.03, step: 0.001 },
-  falloffSpread: { min: 0.1, max: 5, step: 0.1 },
+  falloffSpread: { min: 0.001, max: 5, step: 0.001 },
   falloffBrightness: { min: 0.1, max: 1, step: 0.05 },
   turbulenceSpeed: { min: 0, max: 2, step: 0.05 },
   turbulenceStrength: { min: 0, max: 3, step: 0.05 },
@@ -89,7 +89,7 @@ export const WATER_RANGES: Record<WaterKey, { min: number; max: number; step: nu
 export const DEFAULT_WATER: Record<WaterKey, number> = {
   reflectionIntensity: 0.6,
   reflectionBlur: 0.008,
-  falloffSpread: 1.2,
+  falloffSpread: 0.005,
   falloffBrightness: 0.85,
   turbulenceSpeed: 0.6,
   turbulenceStrength: 2.2,

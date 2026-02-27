@@ -8,10 +8,11 @@ import { SceneContext, ResourceIdContext, type SceneContextType } from './shared
 import { ResourceActor } from './actors/ResourceActor';
 import { GroundActor } from './actors/GroundActor';
 import { ConnectionActor } from './actors/ConnectionActor';
+import { InstancedCubeRenderer } from './theme/tron/meshes/InstancedCubeRenderer';
 import { OrbitCameraController } from './camera/OrbitCameraController';
 import { MapCameraController } from './camera/MapCameraController';
 import { FocusCameraController } from './camera/FocusCameraController';
-import type { CameraMode } from './camera';
+import type { CameraMode, FocusRegion } from './camera';
 import { EffectsPanel } from './ui/features/EffectsPanel';
 import { ConnectionsPanel } from './ui/features/ConnectionsPanel';
 import { PostProcessPanel } from './ui/features/PostProcessPanel';
@@ -37,6 +38,8 @@ import {
   ALL_LABEL_STYLES, LABEL_STYLE_LABELS, DEFAULT_LABEL_STYLE,
   type LabelStyle,
 } from './theme/tron/labels';
+import { PerfMonitor } from './debug/PerfMonitor';
+import { ClusterLabels } from './actors/ClusterLabels';
 
 const DEFAULT_STATE: TerraformState = {
   resources: [{
@@ -65,8 +68,23 @@ function themeKey(type: string): string {
     security_group: 'security_group',
     s3_bucket: 's3_bucket',
     iam_role: 'iam_role',
+    lambda_function: 'lambda',
   };
-  return map[type] ?? 'ec2';
+  return map[type] ?? type;
+}
+
+const DISPLAY_NAMES: Record<string, string> = {
+  instance: 'EC2',
+  vpc: 'VPC',
+  subnet: 'Subnet',
+  security_group: 'Security Group',
+  s3_bucket: 'S3 Bucket',
+  iam_role: 'IAM Role',
+  lambda_function: 'Lambda',
+};
+
+function displayName(type: string): string {
+  return DISPLAY_NAMES[type] ?? type.toUpperCase();
 }
 
 function buildInspectorSections(resource: Resource) {
@@ -105,33 +123,43 @@ type SceneProps = {
   resources: Resource[];
   positions: Map<string, [number, number, number]>;
   focusTarget: FocusTarget | null;
+  focusRegion: FocusRegion | null;
+  onClusterClick?: (center: [number, number, number], size: [number, number, number]) => void;
 };
 
-function CameraController({ mode, isOrtho, focusTarget }: {
+function CameraController({ mode, isOrtho, focusTarget, focusRegion }: {
   mode: CameraMode;
   isOrtho: boolean;
   focusTarget: FocusTarget | null;
+  focusRegion: FocusRegion | null;
 }) {
   switch (mode) {
     case 'map':
-      return <MapCameraController isOrtho={isOrtho} focusTarget={focusTarget} />;
+      return <MapCameraController isOrtho={isOrtho} focusTarget={focusTarget} focusRegion={focusRegion} />;
     case 'focus':
       return (
         <FocusCameraController
           isOrtho={isOrtho}
           selectedResourceId={focusTarget?.selectedResourceId ?? null}
           resourcePositionsRef={focusTarget?.resourcePositionsRef ?? { current: new Map() }}
+          focusRegion={focusRegion}
         />
       );
     default:
-      return <OrbitCameraController isOrtho={isOrtho} focusTarget={focusTarget} />;
+      return <OrbitCameraController isOrtho={isOrtho} focusTarget={focusTarget} focusRegion={focusRegion} />;
   }
 }
 
-function Scene({ isOrtho, cameraMode, resources, positions, focusTarget }: SceneProps) {
+/* When resource count exceeds this threshold, skip per-resource effects
+   (labels, particles, hover boxes) and rely on instanced rendering + cluster labels.
+   Per-resource effects are O(n) draw calls; instanced rendering is O(1). */
+const EFFECT_THRESHOLD = 50;
+
+function Scene({ isOrtho, cameraMode, resources, positions, focusTarget, focusRegion, onClusterClick }: SceneProps) {
   const theme = useTheme();
   const Lights = theme.Lights;
   const PostProcessing = theme.PostProcessing;
+  const highCount = resources.length > EFFECT_THRESHOLD;
 
   return (
     <>
@@ -140,8 +168,10 @@ function Scene({ isOrtho, cameraMode, resources, positions, focusTarget }: Scene
         mode={cameraMode}
         isOrtho={isOrtho}
         focusTarget={focusTarget}
+        focusRegion={focusRegion}
       />
-      {resources.map((resource) => {
+      <InstancedCubeRenderer resources={resources} positions={positions} />
+      {highCount ? null : resources.map((resource) => {
         const pos = positions.get(resource.id) ?? [0, 0, 0];
         return (
           <ResourceIdContext.Provider key={resource.id} value={resource.id}>
@@ -151,6 +181,7 @@ function Scene({ isOrtho, cameraMode, resources, positions, focusTarget }: Scene
           </ResourceIdContext.Provider>
         );
       })}
+      <ClusterLabels resources={resources} positions={positions} onClusterClick={onClusterClick} />
       <GroundActor />
       <ConnectionActor />
       <Lights />
@@ -189,6 +220,13 @@ export default function App({ terraformState }: AppProps) {
   const [connectionToggles, setConnectionToggles] = useState<Record<string, boolean>>({ ...DEFAULT_CONNECTION_TOGGLES });
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('hierarchy');
   const [labelStyle, setLabelStyle] = useState<LabelStyle>(DEFAULT_LABEL_STYLE);
+  const [focusRegion, setFocusRegion] = useState<FocusRegion | null>(null);
+  const focusRegionCounter = useRef(0);
+
+  const handleClusterClick = useCallback((center: [number, number, number], size: [number, number, number]) => {
+    focusRegionCounter.current++;
+    setFocusRegion({ center, size, id: focusRegionCounter.current });
+  }, []);
 
   const handleGenerate = useCallback((hcl: string) => {
     const parsed = parseHcl(hcl);
@@ -311,6 +349,7 @@ export default function App({ terraformState }: AppProps) {
           }}
         >
           <color attach="background" args={['#010103']} />
+          <PerfMonitor />
           <ThemeProvider theme={tronTheme}>
             <SceneContext.Provider value={sceneCtx}>
               <Scene
@@ -319,6 +358,8 @@ export default function App({ terraformState }: AppProps) {
                 resources={resources}
                 positions={positions}
                 focusTarget={(focusOnClick || cameraMode === 'focus') ? { selectedResourceId, resourcePositionsRef } : null}
+                focusRegion={focusRegion}
+                onClusterClick={handleClusterClick}
               />
             </SceneContext.Provider>
           </ThemeProvider>
@@ -399,7 +440,7 @@ export default function App({ terraformState }: AppProps) {
         <ResourceInspector
           open={selected}
           onClose={onDeselect}
-          resourceLabel={activeResource ? themeKey(activeResource.type).toUpperCase() : ''}
+          resourceLabel={activeResource ? displayName(activeResource.type) : ''}
           resourceName={activeResource?.id ?? ''}
           status={activeResource?.state ?? ''}
           statusColor={statusColor}

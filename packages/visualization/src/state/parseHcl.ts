@@ -1,14 +1,27 @@
 import type { TerraformState, Resource, Connection, ResourceType } from '../types';
 
-const TYPE_MAP: Record<string, ResourceType> = {
-  aws_vpc: 'vpc',
-  aws_subnet: 'subnet',
-  aws_security_group: 'security_group',
-  aws_instance: 'instance',
-  aws_s3_bucket: 's3_bucket',
-  aws_iam_role: 'iam_role',
-  aws_lambda_function: 'lambda_function',
-};
+// Longest prefix first — first match wins.
+const TYPE_PREFIXES: [string, ResourceType][] = [
+  ['aws_security_group', 'security_group'],
+  ['aws_lambda_', 'lambda_function'],
+  ['aws_subnet', 'subnet'],
+  ['aws_instance', 'instance'],
+  ['aws_s3_', 's3_bucket'],
+  ['aws_iam_', 'iam_role'],
+  ['aws_vpc', 'vpc'],
+];
+
+function extractServiceName(tfType: string): string {
+  const stripped = tfType.replace(/^aws_/, '');
+  return stripped.split('_')[0] || 'unknown';
+}
+
+function normalizeType(tfType: string): ResourceType {
+  for (const [prefix, type] of TYPE_PREFIXES) {
+    if (tfType.startsWith(prefix)) return type;
+  }
+  return extractServiceName(tfType);
+}
 
 type RawBlock = {
   tfType: string;
@@ -152,7 +165,7 @@ export function parseHcl(src: string): TerraformState {
     const attrs = parseAttributes(block.body);
     return {
       id: address,
-      type: TYPE_MAP[block.tfType] ?? 'instance',
+      type: normalizeType(block.tfType),
       name: block.name,
       attributes: attrs,
       state: 'planned' as const,

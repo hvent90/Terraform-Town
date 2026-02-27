@@ -23,7 +23,7 @@ export type SceneContextType = {
 export const SceneContext = createContext<SceneContextType>(null!);
 
 export const ResourceIdContext = createContext<string>('');
-export const ResourceTypeContext = createContext<string>('ec2');
+export const ResourceTypeContext = createContext<string>('unknown');
 
 export function useSceneContext() {
   return useContext(SceneContext);

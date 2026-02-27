@@ -1,4 +1,27 @@
-import type { TerraformState, Resource, Connection } from '../types';
+import type { TerraformState, Resource, Connection, ResourceType } from '../types';
+
+// Longest prefix first — first match wins.
+const TYPE_PREFIXES: [string, ResourceType][] = [
+  ['aws_security_group', 'security_group'],
+  ['aws_lambda_', 'lambda_function'],
+  ['aws_subnet', 'subnet'],
+  ['aws_instance', 'instance'],
+  ['aws_s3_', 's3_bucket'],
+  ['aws_iam_', 'iam_role'],
+  ['aws_vpc', 'vpc'],
+];
+
+/**
+ * Extract the AWS service name from a terraform resource type.
+ * e.g. "aws_route53_record" → "route53"
+ *      "aws_acm_certificate" → "acm"
+ *      "aws_cloudwatch_log_group" → "cloudwatch"
+ */
+function extractServiceName(tfType: string): string {
+  const stripped = tfType.replace(/^aws_/, '');
+  const firstSeg = stripped.split('_')[0];
+  return firstSeg || 'unknown';
+}
 
 const PARENT_ATTRS: Record<string, string> = {
   vpc_id: 'aws_vpc',
@@ -19,31 +42,51 @@ export class StateSync {
   private buildIdLookup(rawResources: any[]): Map<string, string> {
     const lookup = new Map<string, string>();
     for (const r of rawResources) {
-      const attrs = r.instances?.[0]?.attributes || r.attributes || {};
-      const address = r.address || r.name;
-      if (attrs.id) lookup.set(attrs.id, address);
+      const baseAddress = r.address || r.name;
+      const instances = r.instances || [{ attributes: r.attributes || {} }];
+      for (const instance of instances) {
+        const attrs = instance.attributes || {};
+        const indexKey = instance.index_key;
+        const address = indexKey != null ? `${baseAddress}[${JSON.stringify(indexKey)}]` : baseAddress;
+        if (attrs.id) lookup.set(attrs.id, address);
+      }
     }
     return lookup;
   }
 
   private normalizeResources(rawResources: any[], idToAddress: Map<string, string>): Resource[] {
-    return rawResources.map(r => ({
-      id: r.address || r.name,
-      type: this.normalizeType(r.type),
-      name: r.name,
-      attributes: r.instances?.[0]?.attributes || r.attributes || {},
-      state: 'applied' as const,
-      parentId: this.findParent(r, idToAddress),
-    }));
+    const resources: Resource[] = [];
+    const seen = new Map<string, number>();
+    for (const r of rawResources) {
+      const baseAddress = r.address || r.name;
+      const instances = r.instances || [{ attributes: r.attributes || {} }];
+      for (const instance of instances) {
+        const indexKey = instance.index_key;
+        let id = indexKey != null ? `${baseAddress}[${JSON.stringify(indexKey)}]` : baseAddress;
+
+        // Disambiguate duplicate IDs (can happen with nested modules)
+        const count = seen.get(id) ?? 0;
+        seen.set(id, count + 1);
+        if (count > 0) id = `${id}#${count}`;
+
+        resources.push({
+          id,
+          type: this.normalizeType(r.type),
+          name: r.name,
+          attributes: instance.attributes || {},
+          state: 'applied' as const,
+          parentId: this.findParent(r, idToAddress),
+        });
+      }
+    }
+    return resources;
   }
 
   private normalizeType(tfType: string): Resource['type'] {
-    const typeMap: Record<string, Resource['type']> = {
-      aws_vpc: 'vpc', aws_subnet: 'subnet', aws_security_group: 'security_group',
-      aws_instance: 'instance', aws_s3_bucket: 's3_bucket',
-      aws_iam_role: 'iam_role', aws_lambda_function: 'lambda_function',
-    };
-    return typeMap[tfType] || 'instance';
+    for (const [prefix, type] of TYPE_PREFIXES) {
+      if (tfType.startsWith(prefix)) return type;
+    }
+    return extractServiceName(tfType);
   }
 
   private findParent(resource: any, idToAddress: Map<string, string>): string | undefined {

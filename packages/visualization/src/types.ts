@@ -5,7 +5,9 @@ export type ResourceType =
   | 'instance'
   | 's3_bucket'
   | 'iam_role'
-  | 'lambda_function';
+  | 'lambda_function'
+  | 'unknown'
+  | (string & {});
 
 export type ResourceState =
   | 'planned'

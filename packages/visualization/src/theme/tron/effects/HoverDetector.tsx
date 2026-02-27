@@ -3,10 +3,12 @@ import { useFrame } from '@react-three/fiber';
 import { useRef, useContext } from 'react';
 import { CUBE_SIZE, CUBE_Y } from '../../../shared/geometry';
 import { useSceneContext, ResourceIdContext } from '../../../shared/context';
+import { useFrustumVisible } from '../../../shared/useFrustumVisible';
 
 const _projVec = new THREE.Vector3();
 
 export function HoverDetector() {
+  const groupRef = useFrustumVisible();
   const { hoverTMapRef, selectedTMapRef, selectedResourceIdRef, onSelect, onDeselect, setHoveredResourceId, tooltipRef } = useSceneContext();
   const resourceId = useContext(ResourceIdContext);
   const hoveredRef = useRef(false);
@@ -35,15 +37,17 @@ export function HoverDetector() {
   });
 
   return (
-    <mesh
-      onPointerEnter={() => { hoveredRef.current = true; setHoveredResourceId(resourceId); }}
-      onPointerLeave={() => { hoveredRef.current = false; setHoveredResourceId(null); }}
-      onClick={(e) => { e.stopPropagation(); onSelect(resourceId); }}
-      onPointerMissed={() => onDeselect()}
-      position={[0, CUBE_Y, 0]}
-    >
-      <boxGeometry args={[CUBE_SIZE * 1.5, CUBE_SIZE * 1.5, CUBE_SIZE * 1.5]} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-    </mesh>
+    <group ref={groupRef}>
+      <mesh
+        onPointerEnter={() => { hoveredRef.current = true; setHoveredResourceId(resourceId); }}
+        onPointerLeave={() => { hoveredRef.current = false; setHoveredResourceId(null); }}
+        onClick={(e) => { e.stopPropagation(); onSelect(resourceId); }}
+        onPointerMissed={() => onDeselect()}
+        position={[0, CUBE_Y, 0]}
+      >
+        <boxGeometry args={[CUBE_SIZE * 1.5, CUBE_SIZE * 1.5, CUBE_SIZE * 1.5]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+    </group>
   );
 }

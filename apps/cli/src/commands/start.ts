@@ -27,12 +27,12 @@ export async function startCommand(options: { port?: string; state?: string }) {
 
   // Bundle client
   console.log('Bundling visualization...');
-  const clientJs = await bundleClient();
+  const clientBundle = await bundleClient();
 
   // Create server
   const app = createServer({
     getState: () => currentState,
-    clientJs: clientJs.name,
+    clientJs: clientBundle.entrypoint,
   });
 
   // Start Bun server with WebSocket support
@@ -47,10 +47,12 @@ export async function startCommand(options: { port?: string; state?: string }) {
         return new Response('WebSocket upgrade failed', { status: 400 });
       }
 
-      // Serve bundled JS
-      if (url.pathname === `/${clientJs.name}`) {
-        return new Response(Buffer.from(clientJs.content), {
-          headers: { 'content-type': 'application/javascript' },
+      // Serve bundled assets (JS, fonts, etc.)
+      const assetName = url.pathname.slice(1); // strip leading /
+      const asset = clientBundle.assets.get(assetName);
+      if (asset) {
+        return new Response(Buffer.from(asset.content), {
+          headers: { 'content-type': asset.contentType },
         });
       }
 
@@ -106,9 +108,19 @@ function findStateFile(dir: string): string | null {
   return null;
 }
 
+const CONTENT_TYPES: Record<string, string> = {
+  '.js': 'application/javascript',
+  '.ttf': 'font/ttf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.css': 'text/css',
+};
+
 async function bundleClient(): Promise<{
-  name: string;
-  content: Uint8Array;
+  entrypoint: string;
+  assets: Map<string, { content: Uint8Array; contentType: string }>;
 }> {
   const result = await Bun.build({
     entrypoints: [join(import.meta.dir, '..', 'client', 'index.tsx')],
@@ -121,9 +133,20 @@ async function bundleClient(): Promise<{
     process.exit(1);
   }
 
-  const output = result.outputs[0];
-  const content = await output.arrayBuffer();
-  const name = output.path.split('/').pop()!;
+  const assets = new Map<string, { content: Uint8Array; contentType: string }>();
+  let entrypoint = '';
 
-  return { name, content: new Uint8Array(content) };
+  for (const output of result.outputs) {
+    const content = await output.arrayBuffer();
+    const name = output.path.split('/').pop()!;
+    const ext = name.slice(name.lastIndexOf('.'));
+    const contentType = CONTENT_TYPES[ext] ?? 'application/octet-stream';
+    assets.set(name, { content: new Uint8Array(content), contentType });
+
+    if (output.kind === 'entry-point') {
+      entrypoint = name;
+    }
+  }
+
+  return { entrypoint, assets };
 }

@@ -106,7 +106,7 @@ export function ReflectiveGround() {
   const { groundMesh, uTime, reflection } = useMemo(() => {
     const uTime = uniform(0);
 
-    const geometry = new THREE.PlaneGeometry(80, 80);
+    const geometry = new THREE.PlaneGeometry(500, 500);
     const mat = new MeshBasicNodeMaterial();
     mat.transparent = true;
     mat.depthWrite = false;

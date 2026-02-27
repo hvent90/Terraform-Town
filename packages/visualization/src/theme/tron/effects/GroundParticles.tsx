@@ -4,8 +4,10 @@ import { useMemo, useContext } from 'react';
 import { createGroundParticlesMaterial } from '../shaders/ground-particles.tsl';
 import { AMBER_WARM, COOL_BLUE_BRIGHT, RESOURCE_COLORS, DEFAULT_RESOURCE_COLORS } from '../colors';
 import { useSceneContext, getEffectT, ResourceTypeContext } from '../../../shared/context';
+import { useFrustumVisible } from '../../../shared/useFrustumVisible';
 
 export function GroundParticles() {
+  const groupRef = useFrustumVisible(5);
   const ctx = useSceneContext();
   const resourceType = useContext(ResourceTypeContext);
   const typeColors = resourceType ? (RESOURCE_COLORS[resourceType] ?? DEFAULT_RESOURCE_COLORS) : null;
@@ -67,5 +69,9 @@ export function GroundParticles() {
     }
   });
 
-  return <mesh material={material} geometry={geometry} />;
+  return (
+    <group ref={groupRef}>
+      <mesh material={material} geometry={geometry} />
+    </group>
+  );
 }
